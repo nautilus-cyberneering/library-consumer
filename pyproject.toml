@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "library-consumer"
+version = "0.1.0"
+description = ""
+authors = ["Jose Celano <josecelano@gmail.com>"]
+packages = [
+    { include = "library_consumer", from = "src" },
+]
+
+[tool.poetry.scripts]
+library-consumer = "library_consumer.main:app"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+typer = "^0.4.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
