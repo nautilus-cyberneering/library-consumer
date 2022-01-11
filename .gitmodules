@@ -1,3 +1,6 @@
 [submodule "libraries/aaa"]
 	path = libraries/aaa
 	url = https://github.com/josecelano/library-aaa
+[submodule "libraries/bbb"]
+	path = libraries/bbb
+	url = https://github.com/josecelano/library-bbb
