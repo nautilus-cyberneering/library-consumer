@@ -1,4 +1,4 @@
-name: Update library aaa every minute
+name: Update library aaa
 
 # This ensures that only a single workflow of this type will run at a time
 concurrency: update-library-aaa
