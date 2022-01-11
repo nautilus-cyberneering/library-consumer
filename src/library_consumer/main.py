@@ -30,7 +30,7 @@ def create_dummy_event(event_id: str, payload: str):
     with open(filepath, 'w') as file:
         file.write(json_event)
     
-    typer.echo("Created event file: {filepath}")
+    typer.echo(f"Created event file: {filepath}")
 
 
 @app.command()
