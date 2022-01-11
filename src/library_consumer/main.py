@@ -10,6 +10,8 @@ app: Typer = typer.Typer()
 @app.command()
 def create_dummy_event(event_id: str, payload: str):
     typer.echo("Creating dummy event ...")
+    typer.echo("event_id: {event_id}")
+    typer.echo("payload: {payload}")
 
     now = ct = datetime.datetime.now()
 
@@ -27,6 +29,8 @@ def create_dummy_event(event_id: str, payload: str):
 
     with open(filepath, 'w') as file:
         file.write(json_event)
+    
+    typer.echo("Created event file: {filepath}")
 
 
 @app.command()
