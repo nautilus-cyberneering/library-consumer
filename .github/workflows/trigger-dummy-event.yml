@@ -51,7 +51,7 @@ jobs:
       - name: Create the event
         id: create-event
         run: |
-          EVENT_ID=$(date +%s)-${{ github.run_id }}-${{ github.run_number }}
+          EVENT_ID=$(date +%Y%m%d%H%M%S%N)-dummy-${{ github.run_id }}-${{ github.run_number }}
           echo "::set-output name=event_id::$EVENT_ID"
           library-consumer create-dummy-event $EVENT_ID '${{ github.event.inputs.payload }}'
 
