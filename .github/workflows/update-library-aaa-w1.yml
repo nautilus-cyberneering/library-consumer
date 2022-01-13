@@ -63,7 +63,7 @@ jobs:
 
       - name: Rebase lock
         run: |
-          git pull --rebase         
+          git pull --rebase
 
       - name: Commit submodule update
         if: ${{ steps.update-library.outputs.previous_ref != steps.update-library.outputs.current_ref }}
@@ -96,7 +96,11 @@ jobs:
       - name: Setup git config
         run: |
           git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'      
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Rebase to pull the claim lock
+        run: |
+          git pull --rebase
 
       - name: Release lock
         run: |
