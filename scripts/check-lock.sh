@@ -9,4 +9,8 @@ for COMMIT in $LIST; do
         # it returns and error if the first message we found it's a claim message
         exit 1
     fi
+    # if the commit message prefix is "release"
+    if [[ "$COMMIT_MSG" =~ ^release.* ]]; then
+        exit 0
+    fi    
 done
