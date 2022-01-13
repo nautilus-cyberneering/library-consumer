@@ -68,7 +68,8 @@ jobs:
       - name: Commit submodule update
         if: ${{ steps.update-library.outputs.previous_ref != steps.update-library.outputs.current_ref }}
         run: |
-          echo ${{ steps.update-library.outputs.current_ref }} > library-aaa.version
+          NOW=$(date)
+          echo "Version ${{ steps.update-library.outputs.current_ref }} updated on $NOW" > library-aaa.version
           git add library-aaa.version
           git add libraries/aaa
           git commit -m "update library aaa to commit ${{ steps.update-library.outputs.current_ref }}"
