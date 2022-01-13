@@ -83,7 +83,8 @@ jobs:
       - name: Commit all changes with a single commit
         if: ${{ steps.update-library.outputs.previous_ref != steps.update-library.outputs.current_ref }}
         run: |
-          git add libraries_mirror/aaa && git commit -m "library aaa synced to commit ${{ steps.update-library.outputs.current_ref }}"
+          git add libraries_mirror/aaa 
+          git diff-index --quiet HEAD || git commit -m "library aaa synced to commit ${{ steps.update-library.outputs.current_ref }}"
 
       - name: Push changes
         if: ${{ steps.update-library.outputs.previous_ref != steps.update-library.outputs.current_ref }}
