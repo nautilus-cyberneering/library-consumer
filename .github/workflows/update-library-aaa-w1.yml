@@ -68,7 +68,10 @@ jobs:
       - name: Commit submodule update
         if: ${{ steps.update-library.outputs.previous_ref != steps.update-library.outputs.current_ref }}
         run: |
-          git add libraries/aaa && git commit -m "update library aaa to commit ${{ steps.update-library.outputs.current_ref }}"
+          echo ${{ steps.update-library.outputs.current_ref }} > library-aaa.version
+          git add library-aaa.version
+          git add libraries/aaa
+          git commit -m "update library aaa to commit ${{ steps.update-library.outputs.current_ref }}"
 
       - name: Sync files from library
         if: ${{ steps.update-library.outputs.previous_ref != steps.update-library.outputs.current_ref }}
@@ -76,7 +79,7 @@ jobs:
         run: |
           rsync -a --delete --include='*.txt' ./libraries/aaa/ ./libraries_mirror/aaa
 
-      - name: Commit changes all changes with a single commit
+      - name: Commit all changes with a single commit
         if: ${{ steps.update-library.outputs.previous_ref != steps.update-library.outputs.current_ref }}
         run: |
           git add libraries_mirror/aaa && git commit -m "library aaa synced to commit ${{ steps.update-library.outputs.current_ref }}"
