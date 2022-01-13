@@ -12,7 +12,10 @@ jobs:
   claim-lock:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
+
       - name: Claim lock
+        shell: bash
         run: |
           ./scripts/check-lock.sh
           git commit --allow-empty -m "claim lock ${{ github.run_id }}"
@@ -79,6 +82,8 @@ jobs:
     needs: [claim-lock, update]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
+          
       - name: Release lock
         run: |
           git commit --allow-empty -m "release lock ${{ github.run_id }}"
