@@ -80,7 +80,7 @@ jobs:
         if: ${{ steps.update-submodule.outputs.updated && steps.claim-lock.outputs.lock_claimed }}
         id: copy-library
         run: |
-          rsync -a --delete --include='*.txt' ./libraries/aaa/ ./libraries_mirror/aaa
+          rsync -a --delete --include="*/" --include="*.txt" --exclude="*" ./libraries/aaa/data/ ./libraries_mirror/aaa
 
       - name: Apply changes with a single commit
         if: ${{ steps.update-submodule.outputs.updated && steps.claim-lock.outputs.lock_claimed }}

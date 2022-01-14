@@ -8,7 +8,7 @@ Proof of Concept based on this issue: <https://github.com/Nautilus-Cyberneering/
 - We want to mirror the content of that library into this repo in the folder `libraries_mirror/aaa`.
 - We want to create a workflow as a cronjob that pulls the latest version of the library every 10 minutes and sync the changes.
 - We can create only one commit to apply all changes.
-- Source folder: <https://github.com/josecelano/library-aaa>
+- Source folder: <https://github.com/josecelano/library-aaa/tree/main/data>
 - Folder mirror: [libraries_mirror/aaa](./libraries_mirror/aaa)
 
 This solution has some potential concurrency problems. They can be solved by using the workflow attribute [concurrency](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#concurrency)
@@ -51,6 +51,31 @@ Note: a new workflow is executed every 10 minutes.
 - `T4`. (T2+10") We run a second workflow `W2` to update the library.
 - `T5`. The workflow `W2` finishes and creates a commit with the second version of file `1.txt`.
 - `T6`. The workflow `W1` finishes and overwrites the first version of the file `1.txt`.
+
+## Testing
+
+You can run workflows in parallel by triggering the workflow manually:
+
+![How to trigger the workflow manually](./images/run-workflow-manually.png)
+
+In order to import changes from the [library](https://github.com/josecelano/library-aaa), first you need to create or change a text file on the [library data folder](https://github.com/josecelano/library-aaa/tree/main/data).
+
+When the workflow finishes the got log output should be something like:
+
+```s
+* cca716d - (HEAD -> main, origin/main) lock: release 1697675435 (2022-01-14 12:32:40 +0000) <github-actions[bot]>
+* 0244a1d - library aaa synced to commit 56707c9aef100837857c4d6858435d97edcd8f19 (2022-01-14 12:32:39 +0000) <github-actions[bot]>
+* 655358d - update library aaa to commit 56707c9aef100837857c4d6858435d97edcd8f19 (2022-01-14 12:32:39 +0000) <github-actions[bot]>
+* 469ddf8 - lock: claim 1697675435 (2022-01-14 12:32:37 +0000) <github-actions[bot]>
+```
+
+The second workflow executed should fail:
+
+![The second workflow thread fails](./images/second-workflow-fails.png)
+
+With this message:
+
+![It fails because it can't merge into main due to merge conflicts](./images/claiming-lock-fail.png)
 
 ## Git commands
 
