@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  update:
     runs-on: ubuntu-latest
     steps:
       - name: Debug env vars
@@ -27,11 +27,6 @@ jobs:
         with:
           submodules: "true"
 
-      - name: Set git config user to GitHub Bot
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'          
-
       - name: Update submodule
         id: update-submodule
         shell: bash
@@ -43,6 +38,11 @@ jobs:
           CURRENT_REF=$(git submodule status | awk '{print $1}' | sed 's/-//' | sed 's/+//' | sed 's/U//')
           echo "::set-output name=current_ref::$CURRENT_REF"
           if [ "$PREVIOUS_REF" != "$CURRENT_REF" ]; then echo "::set-output name=updated::true"; else echo "::set-output name=updated::false"; fi
+
+      - name: Set git config user to GitHub Bot
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'  
 
       - name: Claim lock
         id: claim-lock
