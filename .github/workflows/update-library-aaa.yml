@@ -47,14 +47,14 @@ jobs:
           echo -e "updated: ${{ steps.update-submodule.outputs.updated }}"
 
       - name: Set git config user to GitHub Bot
-        if: ${{ steps.update-submodule.outputs.updated == "true" }}
+        if: ${{ steps.update-submodule.outputs.updated == 'true' }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
 
       - name: Claim lock
         id: claim-lock
-        if: ${{ steps.update-submodule.outputs.updated == "true" }}
+        if: ${{ steps.update-submodule.outputs.updated == 'true' }}
         shell: bash
         run: |
           ./scripts/check-lock.sh
@@ -64,7 +64,7 @@ jobs:
 
       - name: Commit submodule update
         id: commit-submodule-update
-        if: ${{ steps.update-submodule.outputs.updated == "true" && steps.claim-lock.outputs.lock_claimed == "true" }}
+        if: ${{ steps.update-submodule.outputs.updated == 'true' && steps.claim-lock.outputs.lock_claimed == 'true' }}
         run: |
           # rebase lock
           git pull --rebase
@@ -73,13 +73,13 @@ jobs:
           git commit -m "update library aaa to commit ${{ steps.update-submodule.outputs.current_ref }}"
 
       - name: Sync files from library
-        if: ${{ steps.update-submodule.outputs.updated == "true" && steps.claim-lock.outputs.lock_claimed == "true" }}
+        if: ${{ steps.update-submodule.outputs.updated == 'true' && steps.claim-lock.outputs.lock_claimed == 'true' }}
         id: copy-library
         run: |
           rsync -a --delete --include="*/" --include="*.txt" --exclude="*" ./libraries/aaa/data/ ./libraries_mirror/aaa
 
       - name: Apply changes with a single commit
-        if: ${{ steps.update-submodule.outputs.updated == "true" && steps.claim-lock.outputs.lock_claimed == "true" }}
+        if: ${{ steps.update-submodule.outputs.updated == 'true' && steps.claim-lock.outputs.lock_claimed == 'true' }}
         run: |
           git add libraries_mirror/aaa
           # commit only if there are changes
@@ -87,7 +87,7 @@ jobs:
           git push
 
       - name: Release lock
-        if: ${{ steps.claim-lock.outputs.lock_claimed == "true" }}
+        if: ${{ steps.claim-lock.outputs.lock_claimed == 'true' }}
         run: |
           git pull --rebase
           git commit --allow-empty -m "lock: release ${{ github.run_id }}"
