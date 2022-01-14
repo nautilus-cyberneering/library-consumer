@@ -58,7 +58,7 @@ jobs:
         shell: bash
         run: |
           ./scripts/check-lock.sh
-          git commit --allow-empty -m "claim lock ${{ github.run_id }}"
+          git commit --allow-empty -m "lock: claim ${{ github.run_id }}"
           git push
           echo "::set-output name=lock_claimed::true"
 
@@ -94,5 +94,5 @@ jobs:
         if: ${{ steps.claim-lock.outputs.lock_claimed }}
         run: |
           git pull --rebase
-          git commit --allow-empty -m "release lock ${{ github.run_id }}"
+          git commit --allow-empty -m "lock: release ${{ github.run_id }}"
           git push          

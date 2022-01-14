@@ -2,7 +2,7 @@
 
 Proof of Concept based on this issue: <https://github.com/Nautilus-Cyberneering/chinese-ideographs-website/issues/19>
 
-Requirements:
+**Requirements**:
 
 - We have a git repo containing only text files. We call it [library-aaa](https://github.com/josecelano/library-aaa).
 - We want to mirror the content of that library into this repo in the folder `libraries_mirror/aaa`.
@@ -13,7 +13,7 @@ Requirements:
 
 This solution has some potential concurrency problems. They can be solved by using the workflow attribute [concurrency](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#concurrency)
 
-Alternative solution:
+**Alternative solution**:
 
 We want to implement a different solution using a locking a git commit as a lock for the update. The rules are:
 
@@ -23,17 +23,23 @@ We want to implement a different solution using a locking a git commit as a lock
 - "Claim the lock" means create an empty commit and push it into the `main` branch. If a second workflows tries to do the same it going to get a merge conflict because we only allow fast forward merge. The first workflow pushing to main will get the lock.
 - Regardless of whether the workflows succeed or fail we have to release the lock at the end of the execution.
 
-Pros:
+**Pros**:
 
 - We do not need to rely on external service.
 
-Cons:
+**Cons**:
 
 - We force fast forward merges for all PRs.
-- If we want to avoid to many merge conflict we have to pause other manual PR merges when the workflow is being executed.
-- I can generate a lot of empty commits. Every time a workflow is executed there are two commits: claiming the lock and releasing the lock.
+- If we want to avoid too many merge conflicts we have to pause other manual PR merges when the workflow is being executed.
+- We only can have one global lock at the time. Actually this solution provides a way to lock any other merge into the main branch.
 
-## Error cases
+**Potencial problems**:
+
+- If someone pulls the lock commit and push a new commit to main before the workflows finishes, the the workflow will fail and it won't release the lock.
+- You can not use these two commit message subject prefixes: `lock: claim` and `lock: release`.
+- The solution is not valid for more than one lock. THe lock provides a mechanism to have exclusive access to merges into main.
+
+## Error examples we are trying to solve with this solution
 
 ### Example 1: overwrite a newer version of the file
 
@@ -62,4 +68,59 @@ Pull changes including submodules.
 
 ```shell
 git pull --recurse-submodules
+```
+
+## Specification
+
+- Commit content must be empty.
+- The first line of the commit message (subject) must follow a predefined format.
+- The rest of the commit message (body) can contain a `json` object with more data.
+
+### Commit messages subject
+
+Claim lock:
+
+```text
+lock: claim [THREAD_ID]
+```
+
+`THREAD_ID` is a unique id for the process that is trying to have exclusive access.
+We are using the run ID provided by GitHub.
+
+Claim lock:
+
+```text
+lock: claim [RESOURCE ID]
+```
+
+### Commit messages body
+
+This could be a sample "lock claim" commit message body:
+
+```json
+{
+    "payload": {
+        "previous_ref": "319eb98f037ebc9d9e8f18c208d0a40f5bedd6b2",
+        "current_ref": "319eb98f037ebc9d9e8f18c208d0a40f5bedd6b2"
+    },
+    "metadata": {
+        "run_id": 4816034715,
+        "run_number": 1
+    }
+}
+```
+
+This could be a sample "lock release" commit message body:
+
+```json
+{
+    "payload": {
+        "previous_ref": "319eb98f037ebc9d9e8f18c208d0a40f5bedd6b2",
+        "current_ref": "319eb98f037ebc9d9e8f18c208d0a40f5bedd6b2"
+    },
+    "metadata": {
+        "run_id": 4816034715,
+        "run_number": 1
+    }
+}
 ```
