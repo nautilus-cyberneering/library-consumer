@@ -39,15 +39,18 @@ jobs:
           echo "::set-output name=current_ref::$CURRENT_REF"
           UPDATED=$(if [ "$PREVIOUS_REF" != "$CURRENT_REF" ]; then echo "true"; else echo "false"; fi)
           echo "::set-output name=updated::$UPDATED"
-          echo -e "previous_ref: $PREVIOUS_REF"
-          echo -e "current_ref: $CURRENT_REF"
-          echo -e "updated: $UPDATED"
+
+      - name: Debug step outputs
+        run: |
+          echo -e "previous_ref: ${{ steps.update-submodule.previous_ref }}"
+          echo -e "current_ref: ${{ steps.update-submodule.current_ref }}"
+          echo -e "updated: ${{ steps.update-submodule.updated }}"
 
       - name: Set git config user to GitHub Bot
         if: ${{ steps.update-submodule.updated == 'true' }}
         run: |
           git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'  
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
 
       - name: Claim lock
         id: claim-lock
