@@ -1,33 +1,12 @@
 name: Update library aaa w1
 
-# This ensures that only a single workflow of this type will run at a time
-concurrency: update-library-aaa-w1
-
 on:
   schedule:
     - cron: "0,10,20,30,40,50 * * * *"
   workflow_dispatch:
 
 jobs:
-  claim-lock:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup git config
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'      
-
-      - name: Claim lock
-        shell: bash
-        run: |
-          ./scripts/check-lock.sh
-          git commit --allow-empty -m "claim lock ${{ github.run_id }}"
-          git push
-
-  update:
-    needs: claim-lock
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Debug env vars
@@ -48,66 +27,64 @@ jobs:
         with:
           submodules: "true"
 
-      - name: Update submodule libraries/aaa
-        id: update-library
-        run: |
-          git submodule status libraries/aaa
-          echo "::set-output name=previous_ref::$(git submodule status | awk '{print $1}' | sed 's/-//' | sed 's/+//' | sed 's/U//')"
-          git submodule update --remote libraries/aaa
-          echo "::set-output name=current_ref::$(git submodule status | awk '{print $1}' | sed 's/-//' | sed 's/+//' | sed 's/U//')"
-
-      - name: Setup git config
+      - name: Set git config user to GitHub Bot
         run: |
           git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'          
 
-      - name: Rebase lock
+      - name: Update submodule
+        id: update-submodule
+        shell: bash
         run: |
-          git pull --rebase
+          git submodule status libraries/aaa
+          PREVIOUS_REF=$(git submodule status | awk '{print $1}' | sed 's/-//' | sed 's/+//' | sed 's/U//')
+          echo "::set-output name=previous_ref::$PREVIOUS_REF"
+          git submodule update --remote libraries/aaa
+          CURRENT_REF=$(git submodule status | awk '{print $1}' | sed 's/-//' | sed 's/+//' | sed 's/U//')
+          echo "::set-output name=current_ref::$CURRENT_REF"
+          if [ "$PREVIOUS_REF" != "$CURRENT_REF" ]; then echo "::set-output name=updated::true"; else echo "::set-output name=updated::false"; fi
+
+      - name: Claim lock
+        id: claim-lock
+        if: ${{ steps.update-submodule.updated }}
+        shell: bash
+        run: |
+          ./scripts/check-lock.sh
+          git commit --allow-empty -m "claim lock ${{ github.run_id }}"
+          git push
+          echo "::set-output name=lock_claimed::true"
 
       - name: Commit submodule update
-        if: ${{ steps.update-library.outputs.previous_ref != steps.update-library.outputs.current_ref }}
+        id: commit-submodule-update
+        if: ${{ steps.update-submodule.updated && steps.claim-lock.lock_claimed }}
         run: |
+          # rebase lock
+          git pull --rebase
+          # update file with version
           NOW=$(date)
           echo "Version ${{ steps.update-library.outputs.current_ref }} updated on $NOW" > library-aaa.version
           git add library-aaa.version
+          # commit submodule update
           git add libraries/aaa
           git commit -m "update library aaa to commit ${{ steps.update-library.outputs.current_ref }}"
 
       - name: Sync files from library
-        if: ${{ steps.update-library.outputs.previous_ref != steps.update-library.outputs.current_ref }}
+        if: ${{ steps.update-submodule.updated && steps.claim-lock.lock_claimed }}
         id: copy-library
         run: |
           rsync -a --delete --include='*.txt' ./libraries/aaa/ ./libraries_mirror/aaa
 
-      - name: Commit all changes with a single commit
-        if: ${{ steps.update-library.outputs.previous_ref != steps.update-library.outputs.current_ref }}
+      - name: Apply changes with a single commit
+        if: ${{ steps.update-submodule.updated && steps.claim-lock.lock_claimed }}
         run: |
-          git add libraries_mirror/aaa 
-          git diff-index --quiet HEAD || git commit -m "library aaa synced to commit ${{ steps.update-library.outputs.current_ref }}"
-
-      - name: Push changes
-        if: ${{ steps.update-library.outputs.previous_ref != steps.update-library.outputs.current_ref }}
-        run: |
+          git add libraries_mirror/aaa
+          # commit only if there are changes
+          git diff-index --quiet HEAD || git commit -m "library aaa synced to commit ${{ steps.update-submodule.outputs.current_ref }}"
           git push
-
-  release-lock:
-    if: always()
-    needs: [claim-lock, update]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup git config
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-
-      - name: Rebase to pull the claim lock
-        run: |
-          git pull --rebase
 
       - name: Release lock
+        if: ${{ steps.claim-lock.lock_claimed }}
         run: |
+          git pull --rebase
           git commit --allow-empty -m "release lock ${{ github.run_id }}"
-          git push
+          git push          
