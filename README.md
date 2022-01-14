@@ -1,5 +1,18 @@
 # Library Consumer
 
+Crazy idea: let's use git empty commits as a concurrency lock to provide exclusive access to git merges.
+
+Problem we are trying to solve:
+
+- We want to generate auto-commit after a submodule has been updated.
+- We want to have exclusive access to git merges while running those changes. We do not want any other process to commit changes into the main branch. For example to avoid duplicate commits.
+
+We need a concurrency solution and we do not want to use GitHub Actions "concurrency" groups.
+
+- If you want to gain exclusive access to git merges you can push a commit claiming a lock.
+- If you get the lock, nobody can push into the branch. The will wait until you push a new commit to release the lock.
+- Race conditions for the "claim lock" commits are solved allowing only fast forwards merges.
+
 Proof of Concept based on this issue: <https://github.com/Nautilus-Cyberneering/chinese-ideographs-website/issues/19>
 
 **Requirements**:
@@ -12,6 +25,12 @@ Proof of Concept based on this issue: <https://github.com/Nautilus-Cyberneering/
 - Folder mirror: [libraries_mirror/aaa](./libraries_mirror/aaa)
 
 This solution has some potential concurrency problems. They can be solved by using the workflow attribute [concurrency](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#concurrency)
+
+**Why do not use GitHub concurrency group**:
+
+- We do not want to be couple to GitHub infrastructure. The solution should work on any other server.
+- In the future we could also tried to prevent developers from merge their changes into the main branch when the critical workflow is being executed.
+- It could work for other changes into main that require exclusive execution.
 
 **Alternative solution**:
 
@@ -143,3 +162,7 @@ This could be a sample "lock release" commit message body:
 ## TODO
 
 - Commit message body.
+
+## Links
+
+- [GitMQ: Git message queue](https://github.com/emad-elsaid/gitmq)
