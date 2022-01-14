@@ -37,9 +37,14 @@ jobs:
           git submodule update --remote libraries/aaa
           CURRENT_REF=$(git submodule status | awk '{print $1}' | sed 's/-//' | sed 's/+//' | sed 's/U//')
           echo "::set-output name=current_ref::$CURRENT_REF"
-          if [ "$PREVIOUS_REF" != "$CURRENT_REF" ]; then echo "::set-output name=updated::true"; else echo "::set-output name=updated::false"; fi
+          UPDATED=$(if [ "$PREVIOUS_REF" != "$CURRENT_REF" ]; then echo "true"; else echo "false"; fi)
+          echo "::set-output name=updated::$UPDATED"
+          echo -e "previous_ref: $PREVIOUS_REF"
+          echo -e "current_ref: $CURRENT_REF"
+          echo -e "updated: $UPDATED"
 
       - name: Set git config user to GitHub Bot
+        if: ${{ steps.update-submodule.updated }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'  
