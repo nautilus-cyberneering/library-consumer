@@ -52,17 +52,7 @@ Note: a new workflow is executed every 10 minutes.
 - `T5`. The workflow `W2` finishes and creates a commit with the second version of file `1.txt`.
 - `T6`. The workflow `W1` finishes and overwrites the first version of the file `1.txt`.
 
-## Install
-
-```shell
-poetry install
-```
-
-## Run
-
-```shell
-poetry run library-consumer test
-```
+## Git commands
 
 Pull changes including submodules.
 
@@ -124,3 +114,7 @@ This could be a sample "lock release" commit message body:
     }
 }
 ```
+
+## TODO
+
+- Commit message body.
