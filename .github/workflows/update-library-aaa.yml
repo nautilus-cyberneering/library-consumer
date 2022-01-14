@@ -1,4 +1,4 @@
-name: Update library aaa w1
+name: Update library aaa
 
 on:
   schedule:
