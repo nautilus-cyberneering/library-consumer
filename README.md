@@ -9,7 +9,7 @@ Requirements:
 - We want to create a workflow as a cronjob that pulls the latest version of the library every 10 minutes and sync the changes.
 - We can create only one commit to apply all changes.
 - Source folder: <https://github.com/josecelano/library-aaa>
-- Folder mirror: <libraries_mirror/aaa>
+- Folder mirror: [libraries_mirror/aaa](./libraries_mirror/aaa)
 
 This solution has some potential concurrency problems. They can be solved by using the workflow attribute [concurrency](https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#concurrency)
 
@@ -56,4 +56,10 @@ poetry install
 
 ```shell
 poetry run library-consumer test
+```
+
+Pull changes including submodules.
+
+```shell
+git pull --recurse-submodules
 ```
