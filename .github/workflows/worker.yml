@@ -1,4 +1,4 @@
-name: Update library aaa - worker
+name: Worker
 
 on:
   schedule:
