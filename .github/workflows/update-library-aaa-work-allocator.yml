@@ -3,7 +3,6 @@ name: Update library aaa work allocator
 on:
   schedule:
     - cron: "0,10,20,30,40,50 * * * *"
-    - branches: [issue-2-work-allocator-and-worker]
   workflow_dispatch:
 
 jobs:
@@ -26,6 +25,7 @@ jobs:
 
       - uses: actions/checkout@v2
         with:
+          ref: issue-2-work-allocator-and-worker
           submodules: "true"
 
       - name: Update submodule
