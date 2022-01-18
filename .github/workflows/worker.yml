@@ -11,20 +11,6 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - name: Debug env vars
-        shell: bash
-        run: |
-          echo -e "GITHUB_REPOSITORY: $GITHUB_REPOSITORY\n"
-          echo -e "GITHUB_WORKSPACE: $GITHUB_WORKSPACE\n"
-          echo -e "GITHUB_SHA: $GITHUB_SHA\n"
-          echo -e "GITHUB_REF: $GITHUB_REF\n"
-          echo -e "GITHUB_HEAD_REF: $GITHUB_HEAD_REF\n"
-          echo -e "GITHUB_BASE_REF: $GITHUB_BASE_REF\n"
-          echo -e "GITHUB_EVENT_NAME: $GITHUB_EVENT_NAME\n"
-          echo -e "GITHUB_EVENT_PATH: $GITHUB_EVENT_PATH\n"
-          echo -e "GITHUB_RUN_ID: $GITHUB_RUN_ID\n"
-          echo -e "GITHUB_RUN_NUMBER: $GITHUB_RUN_NUMBER\n"
-
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
