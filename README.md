@@ -4,8 +4,8 @@ Crazy idea: let's use git empty commits as a concurrency lock to provide exclusi
 
 The problems we are trying to solve:
 
-- We want to generate some auto-commits after a submodule is updated.
-- We want to have exclusive access to git merges while running those changes. We do not want any other process to commit changes into the main branch. For example, to avoid duplicate commits.
+- We want to generate some auto-commits after a submodule is updated. We call the submodule the "library".
+- We want to have exclusive access to git merges while running those changes. We do not want any other process to commit changes into the `main` branch. For example, to avoid duplicate commits.
 
 We need a concurrency solution and we do not want to use GitHub Actions "concurrency" groups.
 
@@ -34,29 +34,39 @@ This solution has some potential concurrency problems. They can be solved by usi
 
 **Alternative solution**:
 
-We want to implement a different solution by using a git commit as a lock for the update. The rules are:
+We want to implement a different solution by using a git empty commit as a lock for the update.
+
+Pessimistic locking solution:
 
 - Only one workflow can update the library. We need to enforce mutual exclusion for workflows updating the library.
 - We want to use a [lock](https://en.wikipedia.org/wiki/Lock_(computer_science)) mechanism.
 - When a thread (workflow) wants to update the library, it has to claim the lock first and release it at the end of the process.
-- "Claim the lock" means to create an empty commit and push it into the `main` branch. If a second workflow tries to do the same it's going to get a merge conflict because we only allow fast forward merge. The first workflow pushing to main will get the lock.
+- "Claim the lock" means to create an empty commit and push it into the `main` branch. If a second workflow tries to do the same it's going to get a merge conflict because we only allow fast forward merges. The first workflow pushing to main will get the lock.
 - Regardless of whether the workflows succeed or fail, we have to release the lock at the end of the execution.
+
+Optimistic locking solution:
+
+- There are two workflows: `work-allocator` and `worker`.
+- The `work-allocator` only checks if there is any job pending to do (a new library commit). If there is an update it pushes a commit into main to claim the lock.
+- The `workers` can check if there is a pending job by checking if there is a lock not released yet in the commit history.
+- Race conditions in both cases are avoided with git merge conflicts when the workflows try to push to main.
 
 **Pros**:
 
 - We do not need to rely on an external service.
+- We can have more than one lock for different tasks. We can have N one-task queues.
 
 **Cons**:
 
 - We force fast forward merges for all PRs.
 - If we want to avoid too many merge conflicts, we have to pause other manual PR merges when the workflow is being executed.
 - We only can have one global lock at the time. Actually, this solution provides a way to lock any other merge into the main branch.
+- With the optimistic approach we can waste a lot of CPU (or other resources) re-processing workflows. If we have too many parallel tasks, merge conflicts could even lead to a deadlock.
 
 **Potential problems**:
 
-- If someone pulls the lock commit and pushes a new commit into then `main` branch before the workflow finishes, the workflow will fail, and it won't release the lock.
-- You can not use these two commit message subject prefixes: `lock: claim` and `lock: release`.
-- The solution is not valid for more than one lock. The lock provides a mechanism to have exclusive access to merges into `main`.
+- If someone pulls the lock commit and pushes a new commit into the `main` branch before the workflow finishes, the workflow will fail, and it won't release the lock.
+- You can not use the specific commit messages used by this protocol.
 
 ## Error examples we are trying to solve with this solution
 
@@ -77,15 +87,19 @@ You can run workflows in parallel by triggering the workflow manually:
 
 ![How to trigger the workflow manually](./images/run-workflow-manually.png)
 
-In order to import changes from the [library](https://github.com/josecelano/library-aaa), first you need to create or change a text file on the [library data folder](https://github.com/josecelano/library-aaa/tree/main/data).
+In order to import changes from the [library](https://github.com/josecelano/library-aaa), first you need to create or change a text file on the [library data folder](https://github.com/josecelano/library-aaa/tree/main/data). You can force a change in the library with an empty commit:
 
-When the workflow finishes the got log output should be something like:
+```shell
+git ci --allow-empty -m "trigger workflow on consumer repo"
+```
+
+When the workflow finishes the log output should be something like:
 
 ```s
-* cca716d - (HEAD -> main, origin/main) lock: release 1697675435 (2022-01-14 12:32:40 +0000) <github-actions[bot]>
-* 0244a1d - library aaa synced to commit 56707c9aef100837857c4d6858435d97edcd8f19 (2022-01-14 12:32:39 +0000) <github-actions[bot]>
-* 655358d - update library aaa to commit 56707c9aef100837857c4d6858435d97edcd8f19 (2022-01-14 12:32:39 +0000) <github-actions[bot]>
-* 469ddf8 - lock: claim 1697675435 (2022-01-14 12:32:37 +0000) <github-actions[bot]>
+* 17b0ebd - (HEAD -> main, origin/main) RELEASE LOCK: JOB DONE: Library Update [library-aaa] (2022-01-18 11:58:7 +0000) <github-actions[bot]>
+* 03b5e38 - library aaa synced to commit 63ea9fda2489780651c732629a7b6e71ad50ffd5 (2022-01-18 11:58:46 +0000) <github-actions[bot]>
+* fbfd046 - update library aaa to commit 63ea9fda2489780651c732629a7b6e71ad50ffd5 (2022-01-18 11:58:45 +0000) <github-actions[bot]>
+* 1731a29 - CLAIM LOCK: JOB: Library Update [library-aaa] (2022-01-18 11:56:58 +0000) <github-actions[bot]>
 ```
 
 The second workflow executed should fail:
@@ -108,60 +122,46 @@ git pull --recurse-submodules
 
 - Commit content must be empty.
 - The first line of the commit message (subject) must follow a predefined format.
-- The rest of the commit message (body) can contain a `json` object with more data.
+- The rest of the commit message (body) can contain a formatted text.
 
 ### Commit messages subject
 
 Claim lock:
 
 ```text
-lock: claim [THREAD_ID]
+CLAIM LOCK: JOB: Library Update [library-aaa]
 ```
 
-`THREAD_ID` is a unique id for the process that is trying to have exclusive access.
-We are using the run ID provided by GitHub.
-
-Claim lock:
+Release lock:
 
 ```text
-lock: claim [RESOURCE ID]
+RELEASE LOCK: JOB DONE: Library Update [library-aaa]
 ```
 
 ### Commit messages body
 
-This could be a sample "lock claim" commit message body:
+This could be a sample "claim lock" commit message body:
 
-```json
-{
-    "payload": {
-        "previous_ref": "319eb98f037ebc9d9e8f18c208d0a40f5bedd6b2",
-        "current_ref": "319eb98f037ebc9d9e8f18c208d0a40f5bedd6b2"
-    },
-    "metadata": {
-        "run_id": 4816034715,
-        "run_number": 1
-    }
-}
+```text
+CLAIM LOCK: JOB: Library Update [library-aaa]
+
+Update Library Submodule and Process Changes:
+https://github.com/josecelano/library-aaa/commit/0e4a414dd76569bc4d7fd565e68f69d7d436ced4
+->
+https://github.com/josecelano/library-aaa/commit/63ea9fda2489780651c732629a7b6e71ad50ffd5
+
+PREVIOUS_REF=0e4a414dd76569bc4d7fd565e68f69d7d436ced4
+CURRENT_REF=63ea9fda2489780651c732629a7b6e71ad50ffd5
 ```
 
-This could be a sample "lock release" commit message body:
+This could be a sample "release lock" commit message body:
 
-```json
-{
-    "payload": {
-        "previous_ref": "319eb98f037ebc9d9e8f18c208d0a40f5bedd6b2",
-        "current_ref": "319eb98f037ebc9d9e8f18c208d0a40f5bedd6b2"
-    },
-    "metadata": {
-        "run_id": 4816034715,
-        "run_number": 1
-    }
-}
+```text
+RELEASE LOCK: JOB DONE: Library Update [library-aaa]
+
+Successfully completed Library Update according to specification in Lock:
+https://github.com/josecelano/library-aaa/commit/63ea9fda2489780651c732629a7b6e71ad50ffd5
 ```
-
-## TODO
-
-- Commit message body.
 
 ## Links
 
