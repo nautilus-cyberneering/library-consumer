@@ -1,0 +1,94 @@
+name: Worker
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0,10,20,30,40,50 * * * *"
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug env vars
+        shell: bash
+        run: |
+          echo -e "GITHUB_REPOSITORY: $GITHUB_REPOSITORY\n"
+          echo -e "GITHUB_WORKSPACE: $GITHUB_WORKSPACE\n"
+          echo -e "GITHUB_SHA: $GITHUB_SHA\n"
+          echo -e "GITHUB_REF: $GITHUB_REF\n"
+          echo -e "GITHUB_HEAD_REF: $GITHUB_HEAD_REF\n"
+          echo -e "GITHUB_BASE_REF: $GITHUB_BASE_REF\n"
+          echo -e "GITHUB_EVENT_NAME: $GITHUB_EVENT_NAME\n"
+          echo -e "GITHUB_EVENT_PATH: $GITHUB_EVENT_PATH\n"
+          echo -e "GITHUB_RUN_ID: $GITHUB_RUN_ID\n"
+          echo -e "GITHUB_RUN_NUMBER: $GITHUB_RUN_NUMBER\n"
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          submodules: "true"
+
+      - name: Get active lock
+        id: get-active-lock
+        shell: bash
+        run: |
+          ./scripts/get-active-lock.sh
+
+      - name: Debug step outputs
+        run: |
+          echo "previous_ref: ${{ steps.get-active-lock.outputs.previous_ref }}"
+          echo "current_ref: ${{ steps.get-active-lock.outputs.current_ref }}"
+          echo "active_lock: ${{ steps.get-active-lock.outputs.active_lock }}"
+
+      - name: Set git config user to GitHub Bot
+        if: ${{ steps.get-active-lock.outputs.active_lock == 'true' }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'   
+
+      - name: Update submodule and commit
+        id: update-submodule
+        if: ${{ steps.get-active-lock.outputs.active_lock == 'true' }}
+        shell: bash
+        run: |
+          cd libraries/aaa
+          git fetch --all
+          git checkout ${{ steps.get-active-lock.outputs.current_ref }}
+
+      - name: Commit submodule update
+        id: commit-submodule-update
+        if: ${{ steps.get-active-lock.outputs.active_lock == 'true' }}
+        shell: bash
+        run: |
+          git add libraries/aaa
+          git commit -m "update library aaa to commit ${{ steps.get-active-lock.outputs.current_ref }}"          
+
+      - name: Sync files from library
+        if: ${{ steps.get-active-lock.outputs.active_lock == 'true' }}
+        id: copy-library
+        run: |
+          rsync -a --delete --include="*/" --include="*.txt" --exclude="*" ./libraries/aaa/data/ ./libraries_mirror/aaa
+
+      - name: Apply changes with a single commit
+        if: ${{ steps.get-active-lock.outputs.active_lock == 'true' }}
+        run: |
+          git add libraries_mirror/aaa
+          # commit only if there are changes
+          git diff-index --quiet HEAD || git commit -m "library aaa synced to commit ${{ steps.get-active-lock.outputs.current_ref }}"
+          git push
+
+      - name: Release lock
+        if: ${{ steps.get-active-lock.outputs.active_lock == 'true' }}
+        run: |
+          COMMIT_MESSAGE="RELEASE LOCK: JOB DONE: Library Update [library-aaa]
+          \n
+          Successfully completed Library Update according to specification in Lock:
+          https://github.com/josecelano/library-aaa/commit/${{ steps.get-active-lock.outputs.current_ref }}"
+          git commit --allow-empty -m "$(echo -e "$COMMIT_MESSAGE")"
+
+      - name: Atomically merge changes and release lock
+        if: ${{ steps.get-active-lock.outputs.active_lock == 'true' }}
+        run: |
+          git push
