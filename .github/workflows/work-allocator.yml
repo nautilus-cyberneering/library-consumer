@@ -1,0 +1,77 @@
+name: Work allocator
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0,10,20,30,40,50 * * * *"
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug env vars
+        shell: bash
+        run: |
+          echo -e "GITHUB_REPOSITORY: $GITHUB_REPOSITORY\n"
+          echo -e "GITHUB_WORKSPACE: $GITHUB_WORKSPACE\n"
+
+          COMMIT_MESSAGE="${COMMIT_MESSAGE//'%'/'%25'}"
+          COMMIT_MESSAGE="${COMMIT_MESSAGE//$'\n'/'%0A'}"
+          COMMIT_MESSAGE="${COMMIT_MESSAGE//$'\r'/'%0D'}"           echo -e "GITHUB_SHA: $GITHUB_SHA\n"
+          echo -e "GITHUB_REF: $GITHUB_REF\n"
+          echo -e "GITHUB_HEAD_REF: $GITHUB_HEAD_REF\n"
+          echo -e "GITHUB_BASE_REF: $GITHUB_BASE_REF\n"
+          echo -e "GITHUB_EVENT_NAME: $GITHUB_EVENT_NAME\n"
+          echo -e "GITHUB_EVENT_PATH: $GITHUB_EVENT_PATH\n"
+          echo -e "GITHUB_RUN_ID: $GITHUB_RUN_ID\n"
+          echo -e "GITHUB_RUN_NUMBER: $GITHUB_RUN_NUMBER\n"
+
+      - uses: actions/checkout@v2
+        with:
+          submodules: "true"
+
+      - name: Update submodule
+        id: update-submodule
+        shell: bash
+        run: |
+          git submodule status libraries/aaa
+          PREVIOUS_REF=$(git submodule status | awk '{print $1}' | sed 's/-//' | sed 's/+//' | sed 's/U//')
+          echo "::set-output name=previous_ref::$PREVIOUS_REF"
+          git submodule update --remote libraries/aaa
+          CURRENT_REF=$(git submodule status | awk '{print $1}' | sed 's/-//' | sed 's/+//' | sed 's/U//')
+          echo "::set-output name=current_ref::$CURRENT_REF"
+          UPDATED=$(if [ "$PREVIOUS_REF" != "$CURRENT_REF" ]; then echo "true"; else echo "false"; fi)
+          echo "::set-output name=updated::$UPDATED"
+
+      - name: Debug step outputs
+        run: |
+          echo -e "previous_ref: ${{ steps.update-submodule.outputs.previous_ref }}"
+          echo -e "current_ref: ${{ steps.update-submodule.outputs.current_ref }}"
+          echo -e "updated: ${{ steps.update-submodule.outputs.updated }}"
+
+      - name: Set git config user to GitHub Bot
+        if: ${{ steps.update-submodule.outputs.updated == 'true' }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Claim lock
+        id: claim-lock
+        if: ${{ steps.update-submodule.outputs.updated == 'true' }}
+        shell: bash
+        run: |
+          ./scripts/check-lock.sh
+          COMMIT_MESSAGE="CLAIM LOCK: JOB: Library Update [library-aaa]
+          \n
+          Update Library Submodule and Process Changes:
+          https://github.com/josecelano/library-aaa/commit/${{ steps.update-submodule.outputs.previous_ref }}
+          ->
+          https://github.com/josecelano/library-aaa/commit/${{ steps.update-submodule.outputs.current_ref }}
+          \n
+          PREVIOUS_REF=${{ steps.update-submodule.outputs.previous_ref }}
+          CURRENT_REF=${{ steps.update-submodule.outputs.current_ref }}"
+          git commit --allow-empty -m "$(echo -e "$COMMIT_MESSAGE")"
+          git push
+          echo "::set-output name=lock_claimed::true"
