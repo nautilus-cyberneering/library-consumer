@@ -1,8 +1,6 @@
 name: Worker
 
 on:
-  push:
-    branches: [main]
   schedule:
     - cron: "0,10,20,30,40,50 * * * *"
   workflow_dispatch:
