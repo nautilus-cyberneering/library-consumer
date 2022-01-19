@@ -1,6 +1,8 @@
 name: Work allocator
 
 on:
+  pull_request:
+    branches: [issue-5-improve-claiming-lock-workflow]
   push:
     branches: [main]
   schedule:
@@ -65,4 +67,3 @@ jobs:
           CURRENT_REF=${{ steps.update-submodule.outputs.current_ref }}"
           git commit --allow-empty -m "$(echo -e "$COMMIT_MESSAGE")"
           git push
-
