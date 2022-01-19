@@ -1,10 +1,8 @@
 name: Work allocator
 
 on:
-  pull_request:
-    branches: [issue-5-improve-claiming-lock-workflow]
   push:
-    branches: [main]
+    branches: [issue-5-improve-claiming-lock-workflow]
   schedule:
     - cron: "0,10,20,30,40,50 * * * *"
   workflow_dispatch:
