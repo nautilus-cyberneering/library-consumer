@@ -13,6 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
+          ref: issue-5-improve-claiming-lock-workflow
           fetch-depth: 0
           submodules: "true"
 
