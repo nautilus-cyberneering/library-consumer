@@ -1,0 +1,28 @@
+name: 'Git Queue'
+description: 'Job queue using git empty commits'
+author: 'Jose Celano'
+branding:
+  icon: 'lock'
+inputs:
+  queue:
+    description: 'queue name'
+    required: true
+  action:
+    description: 'the action you want to perform'
+    required: true
+    options:
+      - next-job
+      - create-job
+      - mark-job-as-done
+  job-payload:
+    description: 'job payload'
+outputs:
+  job-created:
+    description: 'boolean, true if the job was created successfully'
+  job-commit:
+    description: 'the commit hash of newly created commits, when the action creates a new commit'
+  job-payload:
+    description: 'the job payload'
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
