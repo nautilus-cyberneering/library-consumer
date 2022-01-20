@@ -1,4 +1,4 @@
-name: Test git-lock action
+name: Test git-queue action
 
 on:
   push:
