@@ -1,0 +1,61 @@
+name: Test git-lock action
+
+on:
+  push:
+    branches: [main, issue-*]
+  pull_request:
+    branches: [main, issue-*]    
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Create job
+        id: create-job
+        uses: ./.github/actions/git-queue
+        with:
+          queue: "Library Update [library-aaa]"
+          action: "create-job"
+          job-payload: "job-payload"
+
+      - name: Create job debug
+        run: |
+          echo -e "job-created: ${{ steps.create-job.outputs.job-created }}"
+          echo -e "job-commit: ${{ steps.create-job.outputs.job-commit }}"
+
+      - name: Mutual exclusion code
+        if: ${{ steps.create-job.outputs.job-created == 'true' }}
+        run: echo "Running the job that requires mutual exclusion"
+
+      - name: Get next job
+        id: get-next-job
+        if: ${{ steps.create-job.outputs.job-created == 'true' }}
+        uses: ./.github/actions/git-queue
+        with:
+          queue: "Library Update [library-aaa]"
+          action: "next-job"
+
+      - name: Get active job debug
+        if: ${{ steps.create-job.outputs.job-created == 'true' }}      
+        run: |
+          echo -e "job-payload: ${{ steps.get-next-job.outputs.job-payload }}"
+          echo -e "job-commit: ${{ steps.get-next-job.outputs.job-commit }}"
+
+      - name: Mark job as done
+        id: mark-job-as-done
+        if: ${{ steps.create-job.outputs.job-created == 'true' }}              
+        uses: ./.github/actions/git-queue
+        with:
+          queue: "Library Update [library-aaa]"
+          action: "mark-job-as-done"
+          job-payload: "job-payload-done"
+
+      - name: Mark job as done debug
+        if: ${{ steps.mark-job-as-done.outputs.job-created == 'true' }}      
+        run: |
+          echo -e "job-commit: ${{ steps.get-next-job.outputs.job-commit }}"
