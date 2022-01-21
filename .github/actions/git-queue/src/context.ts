@@ -2,16 +2,16 @@ import * as core from '@actions/core';
 import {issueCommand} from '@actions/core/lib/command';
 
 export interface Inputs {
-  queue: string;
+  queueName: string;
   action: string;
   jobPayload: string;
 }
 
 export async function getInputs(): Promise<Inputs> {
   return {
-    queue: core.getInput('queue', { required: true }),
+    queueName: core.getInput('queue_name', { required: true }),
     action: core.getInput('action', { required: true }),
-    jobPayload: core.getInput('job-payload', {required: false}),
+    jobPayload: core.getInput('job_payload', {required: false}),
   };
 }
 
