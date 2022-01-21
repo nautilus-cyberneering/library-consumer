@@ -4,7 +4,7 @@ author: 'Jose Celano'
 branding:
   icon: 'lock'
 inputs:
-  queue:
+  queue_name:
     description: 'queue name'
     required: true
   action:
@@ -14,14 +14,14 @@ inputs:
       - next-job
       - create-job
       - mark-job-as-done
-  job-payload:
+  job_payload:
     description: 'job payload'
 outputs:
-  job-created:
+  job_created:
     description: 'boolean, true if the job was created successfully'
-  job-commit:
+  job_commit:
     description: 'the commit hash of newly created commits, when the action creates a new commit'
-  job-payload:
+  job_payload:
     description: 'the job payload'
 runs:
   using: 'node16'

@@ -23,7 +23,8 @@
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.6.0",
-    "@actions/exec": "^1.1.0"
+    "@actions/exec": "^1.1.0",
+    "simple-git": "^3.0.3"
   },
   "devDependencies": {
     "@types/jest": "^26.0.14",

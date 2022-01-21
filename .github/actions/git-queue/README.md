@@ -109,7 +109,7 @@ Run the app locally:
 
 ```shell
 yarn run build && \
-INPUT_QUEUE="queue-name" \
+INPUT_QUEUE_NAME="Library Update [library-aaa]" \
 INPUT_ACTION="create-job" \
   node dist/index.js
 ```
