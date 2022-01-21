@@ -13,10 +13,18 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
+          fetch-depth: 0
           submodules: "true"
+
+      - name: Get active lock
+        id: get-active-lock
+        shell: bash
+        run: |
+          ./scripts/get-active-lock.sh
 
       - name: Update submodule
         id: update-submodule
+        if: ${{ steps.get-active-lock.outputs.active_lock == 'false' }}
         shell: bash
         run: |
           git submodule status libraries/aaa
@@ -29,23 +37,23 @@ jobs:
           echo "::set-output name=updated::$UPDATED"
 
       - name: Debug step outputs
+        if: ${{ steps.get-active-lock.outputs.active_lock == 'false' }}
         run: |
           echo -e "previous_ref: ${{ steps.update-submodule.outputs.previous_ref }}"
           echo -e "current_ref: ${{ steps.update-submodule.outputs.current_ref }}"
           echo -e "updated: ${{ steps.update-submodule.outputs.updated }}"
 
       - name: Set git config user to GitHub Bot
-        if: ${{ steps.update-submodule.outputs.updated == 'true' }}
+        if: ${{ steps.get-active-lock.outputs.active_lock == 'false' && steps.update-submodule.outputs.updated == 'true' }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
 
       - name: Claim lock
         id: claim-lock
-        if: ${{ steps.update-submodule.outputs.updated == 'true' }}
+        if: ${{ steps.get-active-lock.outputs.active_lock == 'false' && steps.update-submodule.outputs.updated == 'true' }}
         shell: bash
         run: |
-          ./scripts/check-lock.sh
           COMMIT_MESSAGE="CLAIM LOCK: JOB: Library Update [library-aaa]
           \n
           Update Library Submodule and Process Changes:
@@ -57,4 +65,3 @@ jobs:
           CURRENT_REF=${{ steps.update-submodule.outputs.current_ref }}"
           git commit --allow-empty -m "$(echo -e "$COMMIT_MESSAGE")"
           git push
-          echo "::set-output name=lock_claimed::true"

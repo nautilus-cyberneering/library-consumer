@@ -9,7 +9,7 @@ The problems we are trying to solve:
 
 We need a concurrency solution and we do not want to use GitHub Actions "concurrency" groups.
 
-- If you want to gain exclusive access to git merges, you can push a commit claiming a lock.
+- If you want to gain exclusive access to git merges, you can push an empty commit claiming a lock.
 - If you get the lock, nobody can push into the branch. They will wait until you push a new commit to release the lock.
 - Race conditions for the "claim lock" commits are solved by allowing only fast forwards merges.
 
@@ -41,13 +41,13 @@ Pessimistic locking solution:
 - Only one workflow can update the library. We need to enforce mutual exclusion for workflows updating the library.
 - We want to use a [lock](https://en.wikipedia.org/wiki/Lock_(computer_science)) mechanism.
 - When a thread (workflow) wants to update the library, it has to claim the lock first and release it at the end of the process.
-- "Claim the lock" means to create an empty commit and push it into the `main` branch. If a second workflow tries to do the same it's going to get a merge conflict because we only allow fast forward merges. The first workflow pushing to main will get the lock.
-- Regardless of whether the workflows succeed or fail, we have to release the lock at the end of the execution.
+- "Claim the lock" means to create an empty commit and push it into the `main` branch. If a second workflow tries to do the same it's going to get a merge conflict because we use fast forward merges. The first workflow pushing to main will get the lock.
+- Regardless of whether the workflow succeeds or fail, we have to release the lock at the end of the execution.
 
 Optimistic locking solution:
 
 - There are two workflows: `work-allocator` and `worker`.
-- The `work-allocator` only checks if there is any job pending to do (a new library commit). If there is an update it pushes a commit into main to claim the lock.
+- The `work-allocator` only checks if there is a pending job (a new library commit). If there is an update, it pushes a commit into main to claim the lock.
 - The `workers` can check if there is a pending job by checking if there is a lock not released yet in the commit history.
 - Race conditions in both cases are avoided with git merge conflicts when the workflows try to push to main.
 
@@ -55,18 +55,17 @@ Optimistic locking solution:
 
 - We do not need to rely on an external service.
 - We can have more than one lock for different tasks. We can have N one-task queues.
+- We should not waste too much CPU. The only common case where there would be reprocessed work is when an unrelated PR is merged in in-between the processing time of a Worker Thread. This would require the worker thread to be attempted again later after the failed fast-forward merge.
+- Unless we do something very wrong, there should never be a deadlock from merge conflicts with the "optimistic approach", When there is a merge conflict, the work is simply disregarded and re-attempted later on by the cron job, therefore releasing the lock at a later time (without the merge conflict).
+- It is indeed possible to construct a special "Global" or "World" lock as a way to lock any other merge into the main branch.
 
 **Cons**:
 
-- We force fast forward merges for all PRs.
 - If we want to avoid too many merge conflicts, we have to pause other manual PR merges when the workflow is being executed.
-- We only can have one global lock at the time. Actually, this solution provides a way to lock any other merge into the main branch.
-- With the optimistic approach we can waste a lot of CPU (or other resources) re-processing workflows. If we have too many parallel tasks, merge conflicts could even lead to a deadlock.
 
 **Potential problems**:
 
-- If someone pulls the lock commit and pushes a new commit into the `main` branch before the workflow finishes, the workflow will fail, and it won't release the lock.
-- You can not use the specific commit messages used by this protocol.
+- You can not use the specific commit subject used by this protocol.
 
 ## Error examples we are trying to solve with this solution
 
