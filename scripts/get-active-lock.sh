@@ -41,7 +41,7 @@ for COMMIT in $LIST; do
         echo "No active lock"
         echo "::set-output name=previous_ref::"
         echo "::set-output name=current_ref::"
-        echo "::set-output name=active_lock::"
+        echo "::set-output name=active_lock::false"
         exit 0
     fi
 done
