@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, issue-*]
   pull_request:
-    branches: [main, issue-*]    
+    branches: [main, issue-*]
   workflow_dispatch:
 
 jobs:
@@ -15,47 +15,47 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create job
-        id: create-job
-        uses: ./.github/actions/git-queue
-        with:
-          queue: "Library Update [library-aaa]"
-          action: "create-job"
-          job-payload: "job-payload"
+      #- name: Create job
+      #  id: create-job
+      #  uses: ./.github/actions/git-queue
+      #  with:
+      #    queue_name: "Library Update [library-aaa]"
+      #    action: "create-job"
+      #    job_payload: "job_payload"
 
-      - name: Create job debug
-        run: |
-          echo -e "job-created: ${{ steps.create-job.outputs.job-created }}"
-          echo -e "job-commit: ${{ steps.create-job.outputs.job-commit }}"
+      #- name: Create job debug
+      #  run: |
+      #    echo -e "job_created: ${{ steps.create-job.outputs.job_created }}"
+      #    echo -e "job_commit: ${{ steps.create-job.outputs.job_commit }}"
 
-      - name: Mutual exclusion code
-        if: ${{ steps.create-job.outputs.job-created == 'true' }}
-        run: echo "Running the job that requires mutual exclusion"
+      #- name: Mutual exclusion code
+      #  if: ${{ steps.create-job.outputs.job_created == 'true' }}
+      #  run: echo "Running the job that requires mutual exclusion"
 
       - name: Get next job
         id: get-next-job
-        if: ${{ steps.create-job.outputs.job-created == 'true' }}
+        # if: ${{ steps.create-job.outputs.job_created == 'true' }}
         uses: ./.github/actions/git-queue
         with:
-          queue: "Library Update [library-aaa]"
+          queue_name: "Library Update [library-aaa]"
           action: "next-job"
 
-      - name: Get active job debug
-        if: ${{ steps.create-job.outputs.job-created == 'true' }}      
+      - name: Get next job debug
+        # if: ${{ steps.create-job.outputs.job_created == 'true' }}
         run: |
-          echo -e "job-payload: ${{ steps.get-next-job.outputs.job-payload }}"
-          echo -e "job-commit: ${{ steps.get-next-job.outputs.job-commit }}"
+          echo -e "job_payload: ${{ steps.get-next-job.outputs.job_payload }}"
+          echo -e "job_commit: ${{ steps.get-next-job.outputs.job_commit }}"
 
-      - name: Mark job as done
-        id: mark-job-as-done
-        if: ${{ steps.create-job.outputs.job-created == 'true' }}              
-        uses: ./.github/actions/git-queue
-        with:
-          queue: "Library Update [library-aaa]"
-          action: "mark-job-as-done"
-          job-payload: "job-payload-done"
+      #- name: Mark job as done
+      #  id: mark-job-as-done
+      #  if: ${{ steps.create-job.outputs.job_created == 'true' }}
+      #  uses: ./.github/actions/git-queue
+      #  with:
+      #    queue-name: "Library Update [library-aaa]"
+      #    action: "mark-job-as-done"
+      #    job_payload: "job_payload-done"
 
-      - name: Mark job as done debug
-        if: ${{ steps.mark-job-as-done.outputs.job-created == 'true' }}      
-        run: |
-          echo -e "job-commit: ${{ steps.get-next-job.outputs.job-commit }}"
+      #- name: Mark job as done debug
+      #  if: ${{ steps.mark-job-as-done.outputs.job_created == 'true' }}
+      #  run: |
+      #    echo -e "job_commit: ${{ steps.get-next-job.outputs.job_commit }}"
