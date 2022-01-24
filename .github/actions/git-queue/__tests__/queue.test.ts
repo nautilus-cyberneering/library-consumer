@@ -1,74 +1,34 @@
 import {Queue} from '../src/queue';
+import simpleGit, {SimpleGit, CleanOptions} from 'simple-git';
+import {createTempDir} from 'jest-fixtures';
+
+async function createTmpDir(): Promise<string> {
+  const tempGitDirPath = await createTempDir();
+  return tempGitDirPath;
+}
+
+async function newSimpleGit(baseDir: string): Promise<SimpleGit> {
+  const git = simpleGit(baseDir);
+  await git.init();
+  return git;
+}
 
 describe('Queue', () => {
-  it('should extract its own messages from a git log output', () => {
-    const gitLog = [
-      {
-        hash: '064d7f8963bcfe0802b61d8770653ebdc7fe1447',
-        date: '2022-01-18T11:47:55+00:00',
-        message: 'CLAIM LOCK: JOB: THIS QUEUE',
-        refs: '',
-        body: '',
-        author_name: 'github-actions[bot]',
-        author_email: 'github-actions[bot]@users.noreply.github.com'
-      },
-      {
-        hash: '064d7f8963bcfe0802b61d8770653ebdc7fe1447',
-        date: '2022-01-18T11:47:55+00:00',
-        message: 'CLAIM LOCK: JOB: ANOTHER QUEUE',
-        refs: '',
-        body: '',
-        author_name: 'github-actions[bot]',
-        author_email: 'github-actions[bot]@users.noreply.github.com'
-      }
-    ];
+  it('should dispatch a new job', async () => {
+    const git = await newSimpleGit(await createTmpDir());
 
-    let queue = new Queue('THIS QUEUE', gitLog);
+    const payload = JSON.stringify({
+      field: 'value'
+    });
 
-    const expectedMessages = [
-      {
-        commit: {
-          hash: '064d7f8963bcfe0802b61d8770653ebdc7fe1447',
-          date: '2022-01-18T11:47:55+00:00',
-          message: 'CLAIM LOCK: JOB: THIS QUEUE',
-          refs: '',
-          body: '',
-          author_name: 'github-actions[bot]',
-          author_email: 'github-actions[bot]@users.noreply.github.com'
-        }
-      }
-    ];
+    let queue = await Queue.initialize('THIS QUEUE', git);
 
-    expect(queue.getMessages()).toEqual(expectedMessages);
-  });
+    const signCommit = false;
 
-  it('should return the next job to process', () => {
-    const gitLog = [
-      {
-        hash: '064d7f8963bcfe0802b61d8770653ebdc7fe1447',
-        date: '2022-01-18T11:47:55+00:00',
-        message: 'CLAIM LOCK: JOB: THIS QUEUE',
-        refs: '',
-        body: '',
-        author_name: 'github-actions[bot]',
-        author_email: 'github-actions[bot]@users.noreply.github.com'
-      }
-    ];
+    await queue.dispatch(payload, signCommit);
 
-    let queue = new Queue('THIS QUEUE', gitLog);
+    const nextJob = queue.getNextJob();
 
-    const expectedMessage = {
-      commit: {
-        hash: '064d7f8963bcfe0802b61d8770653ebdc7fe1447',
-        date: '2022-01-18T11:47:55+00:00',
-        message: 'CLAIM LOCK: JOB: THIS QUEUE',
-        refs: '',
-        body: '',
-        author_name: 'github-actions[bot]',
-        author_email: 'github-actions[bot]@users.noreply.github.com'
-      }
-    };
-
-    expect(queue.getNextJob()).toEqual(expectedMessage);
+    expect(nextJob.payload()).toBe(payload);
   });
 });

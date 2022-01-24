@@ -71,9 +71,9 @@ Following inputs are available
 
 | Name          | Type    | Description                           |
 |---------------|---------|---------------------------------------|
-| `queue` | String | Queue name |
+| `queue_name` | String | Queue name |
 | `action` | String | Queue action: [ `next-job`, `create-job`, `mark-job-as-done` ] |
-| `job-payload` | String | The job payload |
+| `job_-_payload` | String | The job payload |
 
 ### outputs
 
@@ -81,9 +81,9 @@ Following outputs are available
 
 | Name          | Type   | Description                           |
 |---------------|--------|---------------------------------------|
-| `job-created` | String | Boolean. true if the job was successfully created |
-| `job-commit`  | String | The commit hash when a new commit is created |
-| `job-payload` | String | The job payload |
+| `job_created` | String | Boolean. true if the job was successfully created |
+| `job_commit`  | String | The commit hash when a new commit is created |
+| `job_payload` | String | The job payload |
 
 ## Development
 
@@ -110,7 +110,7 @@ Run the app locally:
 ```shell
 yarn run build && \
 INPUT_QUEUE_NAME="Library Update [library-aaa]" \
-INPUT_ACTION="create-job" \
+INPUT_ACTION="next-job" \
   node dist/index.js
 ```
 

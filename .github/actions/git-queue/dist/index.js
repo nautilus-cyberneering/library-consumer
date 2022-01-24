@@ -120,7 +120,7 @@ function run() {
                 core.info(`queue: ${inputs.queueName}`);
             }
             const gitLog = yield git_1.git.log();
-            let queue = new queue_1.Queue(inputs.queueName, gitLog.all);
+            let queue = new queue_1.Queue(inputs.queueName, git_1.git);
             switch (inputs.action) {
                 case 'create-job':
                     // TODO
@@ -152,12 +152,22 @@ run();
 /***/ }),
 
 /***/ 65:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Queue = void 0;
+const simple_git_1 = __webpack_require__(959);
 class Message {
     constructor(commit) {
         this.commit = commit;
@@ -166,18 +176,66 @@ class Message {
         return this.commit.hash;
     }
     payload() {
-        return this.commit.body;
+        return this.commit.body.trim();
     }
+    isEmpty() {
+        return this instanceof NoMessage;
+    }
+}
+class NoMessage extends Message {
 }
 class CreateJobMessage extends Message {
 }
 class MarkJobAsDoneMessage extends Message {
 }
+function noMessage() {
+    return new NoMessage({
+        hash: '',
+        date: '',
+        message: 'no-message',
+        refs: '',
+        body: '',
+        author_name: '',
+        author_email: ''
+    });
+}
 class Queue {
-    constructor(name, gitLog) {
+    constructor(name, git) {
+        this.CREATE_JOB_SUBJECT_PREFIX = 'CLAIM LOCK: JOB: ';
+        this.MARK_JOB_AS_DONE_SUBJECT_PREFIX = 'RELEASE LOCK: JOB DONE: ';
         this.name = name;
-        this.commits = gitLog.filter(commit => this.commitBelongsToQueue(commit));
-        this.messages = this.commits.map(commit => this.messageFactory(commit));
+        this.git = git;
+        this.messages = [];
+    }
+    static initialize(name, git) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let queue = new Queue(name, git);
+            yield queue.loadMessagesFromGit();
+            return queue;
+        });
+    }
+    loadMessagesFromGit() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const isRepo = yield this.git.checkIsRepo(simple_git_1.CheckRepoActions.IS_REPO_ROOT);
+            if (!isRepo) {
+                throw Error(`Invalid git dir`);
+            }
+            const status = yield this.git.status();
+            const currentBranch = status.current;
+            try {
+                const gitLog = yield this.git.log();
+                const commits = gitLog.all.filter(commit => this.commitBelongsToQueue(commit));
+                this.messages = commits.map(commit => this.messageFactory(commit));
+            }
+            catch (err) {
+                if (err.message.includes(`fatal: your current branch '${currentBranch}' does not have any commits yet`)) {
+                    // no commits yet
+                }
+                else {
+                    throw err;
+                }
+            }
+        });
     }
     commitBelongsToQueue(commit) {
         return this.isCreateJobCommit(commit) || this.isMarkJobAsDoneCommit(commit) ? true : false;
@@ -191,44 +249,38 @@ class Queue {
         }
         throw new Error(`Invalid queue commit: ${commit.hash}`);
     }
+    createJobCommitSubject() {
+        return `${this.CREATE_JOB_SUBJECT_PREFIX}${this.name}`;
+    }
+    markJobAsDoneCommitSubject() {
+        return `${this.MARK_JOB_AS_DONE_SUBJECT_PREFIX}${this.name}`;
+    }
     isCreateJobCommit(commit) {
-        const creteJobCommitSubject = `CLAIM LOCK: JOB: ${this.name}`;
-        if (commit.message == creteJobCommitSubject) {
-            return true;
-        }
-        return false;
+        return commit.message == this.createJobCommitSubject() ? true : false;
     }
     isMarkJobAsDoneCommit(commit) {
-        const markJobAsDoneCommitSubject = `RELEASE LOCK: JOB DONE: ${this.name}`;
-        if (commit.message == markJobAsDoneCommitSubject) {
-            return true;
-        }
-        return false;
-    }
-    getCommits() {
-        return this.commits;
+        return commit.message == this.markJobAsDoneCommitSubject() ? true : false;
     }
     getMessages() {
         return this.messages;
     }
     getLatestMessage() {
-        return this.isEmpty() ? null : this.messages[0];
+        return this.isEmpty() ? noMessage() : this.messages[0];
     }
     isEmpty() {
         return this.messages.length == 0;
     }
     getNextJob() {
-        if (this.isEmpty()) {
-            return null;
-        }
-        const latestMsg = this.getLatestMessage();
-        if (latestMsg == null) {
-            return null;
-        }
-        if (latestMsg instanceof MarkJobAsDoneMessage) {
-            return null;
-        }
-        return latestMsg;
+        const latestMessage = this.getLatestMessage();
+        return latestMessage instanceof CreateJobMessage ? latestMessage : noMessage();
+    }
+    dispatch(payload, gpgSign) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const message = [`${this.createJobCommitSubject()}`, `${payload}`];
+            const options = Object.assign({ '--allow-empty': null }, (!gpgSign && { '--no-gpg-sign': null }));
+            yield this.git.commit(message, options);
+            yield this.loadMessagesFromGit();
+        });
     }
 }
 exports.Queue = Queue;
