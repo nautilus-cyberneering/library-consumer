@@ -31,4 +31,23 @@ describe('Queue', () => {
 
     expect(nextJob.payload()).toBe(payload);
   });
+
+  it('should mark a job as done', async () => {
+    const git = await newSimpleGit(await createTmpDir());
+
+    const payload = JSON.stringify({
+      field: 'value'
+    });
+
+    let queue = await Queue.create('QUEUE NAME', git);
+
+    const signCommit = false;
+
+    await queue.dispatch(payload, signCommit);
+    await queue.markJobAsDone(payload, signCommit);
+
+    const nextJob = queue.getNextJob();
+
+    expect(nextJob.isEmpty()).toBe(true);
+  });
 });
