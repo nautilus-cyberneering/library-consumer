@@ -1,4 +1,4 @@
-import {DefaultLogFields, ListLogLine, SimpleGit} from 'simple-git';
+import {DefaultLogFields, SimpleGit, CheckRepoActions, GitResponseError} from 'simple-git';
 import * as git from './git';
 
 class Message {
@@ -13,22 +13,78 @@ class Message {
   }
 
   payload() {
-    return this.commit.body;
+    return this.commit.body.trim();
+  }
+
+  isEmpty() {
+    return this instanceof NoMessage;
   }
 }
 
+class NoMessage extends Message {}
 class CreateJobMessage extends Message {}
 class MarkJobAsDoneMessage extends Message {}
 
+class Commit {
+  hash: string;
+
+  constructor(hash: string) {
+    this.hash = hash;
+  }
+}
+
+function noMessage() {
+  return new NoMessage({
+    hash: '',
+    date: '',
+    message: 'no-message',
+    refs: '',
+    body: '',
+    author_name: '',
+    author_email: ''
+  });
+}
+
 export class Queue {
   name: string;
-  commits: ReadonlyArray<DefaultLogFields>;
+  git: SimpleGit;
   messages: ReadonlyArray<Message>;
 
-  constructor(name: string, gitLog: ReadonlyArray<DefaultLogFields>) {
+  readonly CREATE_JOB_SUBJECT_PREFIX = 'CLAIM LOCK: JOB: ';
+  readonly MARK_JOB_AS_DONE_SUBJECT_PREFIX = 'RELEASE LOCK: JOB DONE: ';
+
+  constructor(name: string, git: SimpleGit) {
     this.name = name;
-    this.commits = gitLog.filter(commit => this.commitBelongsToQueue(commit));
-    this.messages = this.commits.map(commit => this.messageFactory(commit));
+    this.git = git;
+    this.messages = [];
+  }
+
+  static async initialize(name: string, git: SimpleGit): Promise<Queue> {
+    let queue = new Queue(name, git);
+    await queue.loadMessagesFromGit();
+    return queue;
+  }
+
+  async loadMessagesFromGit() {
+    const isRepo = await this.git.checkIsRepo(CheckRepoActions.IS_REPO_ROOT);
+    if (!isRepo) {
+      throw Error(`Invalid git dir`);
+    }
+
+    const status = await this.git.status();
+    const currentBranch = status.current;
+
+    try {
+      const gitLog = await this.git.log();
+      const commits = gitLog.all.filter(commit => this.commitBelongsToQueue(commit));
+      this.messages = commits.map(commit => this.messageFactory(commit));
+    } catch (err) {
+      if ((err as GitResponseError).message.includes(`fatal: your current branch '${currentBranch}' does not have any commits yet`)) {
+        // no commits yet
+      } else {
+        throw err;
+      }
+    }
   }
 
   commitBelongsToQueue(commit: DefaultLogFields) {
@@ -44,56 +100,64 @@ export class Queue {
       return new MarkJobAsDoneMessage(commit);
     }
 
-    throw new Error(`Invalid queue commit: ${commit.hash}`);
+    throw new Error(`Invalid queue message in commit: ${commit.hash}`);
   }
 
-  isCreateJobCommit(commit: DefaultLogFields) {
-    const creteJobCommitSubject = `CLAIM LOCK: JOB: ${this.name}`;
-    if (commit.message == creteJobCommitSubject) {
-      return true;
-    }
-    return false;
+  createJobCommitSubject() {
+    return `${this.CREATE_JOB_SUBJECT_PREFIX}${this.name}`;
   }
 
-  isMarkJobAsDoneCommit(commit: DefaultLogFields) {
-    const markJobAsDoneCommitSubject = `RELEASE LOCK: JOB DONE: ${this.name}`;
-    if (commit.message == markJobAsDoneCommitSubject) {
-      return true;
-    }
-    return false;
+  markJobAsDoneCommitSubject() {
+    return `${this.MARK_JOB_AS_DONE_SUBJECT_PREFIX}${this.name}`;
   }
 
-  getCommits() {
-    return this.commits;
+  isCreateJobCommit(commit: DefaultLogFields): boolean {
+    return commit.message == this.createJobCommitSubject() ? true : false;
   }
 
-  getMessages() {
+  isMarkJobAsDoneCommit(commit: DefaultLogFields): boolean {
+    return commit.message == this.markJobAsDoneCommitSubject() ? true : false;
+  }
+
+  getMessages(): ReadonlyArray<Message> {
     return this.messages;
   }
 
-  getLatestMessage() {
-    return this.isEmpty() ? null : this.messages[0];
+  getLatestMessage(): Message {
+    return this.isEmpty() ? noMessage() : this.messages[0];
   }
 
-  isEmpty() {
+  isEmpty(): boolean {
     return this.messages.length == 0;
   }
 
-  getNextJob() {
-    if (this.isEmpty()) {
-      return null;
+  getNextJob(): Message {
+    const latestMessage = this.getLatestMessage();
+    return latestMessage instanceof CreateJobMessage ? latestMessage : noMessage();
+  }
+
+  guardThatThereIsNoPendingJobs() {
+    if (!this.getNextJob().isEmpty()) {
+      throw new Error(`Can't create a new job. There is already a pending job in commit: ${this.getNextJob().commit_hash}`);
     }
+  }
 
-    const latestMsg = this.getLatestMessage();
+  async dispatch(payload: string, gpgSign: boolean) {
+    this.guardThatThereIsNoPendingJobs();
 
-    if (latestMsg == null) {
-      return null;
-    }
+    const message = [`${this.createJobCommitSubject()}`, `${payload}`];
 
-    if (latestMsg instanceof MarkJobAsDoneMessage) {
-      return null;
-    }
+    // TODO: signed commits
 
-    return latestMsg;
+    const options = {
+      '--allow-empty': null,
+      ...(!gpgSign && {'--no-gpg-sign': null})
+    };
+
+    const commitResult = await this.git.commit(message, options);
+
+    await this.loadMessagesFromGit();
+
+    return new Commit(commitResult.commit);
   }
 }
