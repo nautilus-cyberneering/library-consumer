@@ -15,13 +15,13 @@ async function run(): Promise<void> {
 
     switch (inputs.action) {
       case 'create-job':
-        const commit = await queue.dispatch(inputs.jobPayload, false);
+        const createJobCommit = await queue.dispatch(inputs.jobPayload, false);
 
         await core.group(`Setting outputs`, async () => {
-          context.setOutput('job_created', true);          
-          context.setOutput('job_commit', commit.hash);
+          context.setOutput('job_created', true);
+          context.setOutput('job_commit', createJobCommit.hash);
         });
-        
+
         break;
       case 'next-job':
         const nextJob = queue.getNextJob();
@@ -36,7 +36,13 @@ async function run(): Promise<void> {
         break;
 
       case 'mark-job-as-done':
-        // TODO
+        const markJobAsDoneCommit = await queue.markJobAsDone(inputs.jobPayload, false);
+
+        await core.group(`Setting outputs`, async () => {
+          context.setOutput('job_created', true);
+          context.setOutput('job_commit', markJobAsDoneCommit.hash);
+        });
+
         break;
       default:
         core.error('Invalid action');
