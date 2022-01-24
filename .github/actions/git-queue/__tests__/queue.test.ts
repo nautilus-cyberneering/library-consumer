@@ -21,7 +21,7 @@ describe('Queue', () => {
       field: 'value'
     });
 
-    let queue = await Queue.initialize('THIS QUEUE', git);
+    let queue = await Queue.create('QUEUE NAME', git);
 
     const signCommit = false;
 
