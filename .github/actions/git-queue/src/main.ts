@@ -11,7 +11,7 @@ async function run(): Promise<void> {
       core.info(`queue: ${inputs.queueName}`);
     }
 
-    let queue = await Queue.initialize(inputs.queueName, git);
+    let queue = await Queue.create(inputs.queueName, git);
 
     switch (inputs.action) {
       case 'create-job':

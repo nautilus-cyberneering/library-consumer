@@ -53,13 +53,13 @@ export class Queue {
   readonly CREATE_JOB_SUBJECT_PREFIX = 'CLAIM LOCK: JOB: ';
   readonly MARK_JOB_AS_DONE_SUBJECT_PREFIX = 'RELEASE LOCK: JOB DONE: ';
 
-  constructor(name: string, git: SimpleGit) {
+  private constructor(name: string, git: SimpleGit) {
     this.name = name;
     this.git = git;
     this.messages = [];
   }
 
-  static async initialize(name: string, git: SimpleGit): Promise<Queue> {
+  static async create(name: string, git: SimpleGit): Promise<Queue> {
     let queue = new Queue(name, git);
     await queue.loadMessagesFromGit();
     return queue;
