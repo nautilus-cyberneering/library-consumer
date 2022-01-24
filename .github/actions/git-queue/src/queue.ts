@@ -142,10 +142,35 @@ export class Queue {
     }
   }
 
+  guardThatThereIsAPendingJob() {
+    if (this.getNextJob().isEmpty()) {
+      throw new Error(`Can't mark job as done. There isn't any pending job`);
+    }
+  }
+
   async dispatch(payload: string, gpgSign: boolean) {
     this.guardThatThereIsNoPendingJobs();
 
     const message = [`${this.createJobCommitSubject()}`, `${payload}`];
+
+    // TODO: signed commits
+
+    const options = {
+      '--allow-empty': null,
+      ...(!gpgSign && {'--no-gpg-sign': null})
+    };
+
+    const commitResult = await this.git.commit(message, options);
+
+    await this.loadMessagesFromGit();
+
+    return new Commit(commitResult.commit);
+  }
+
+  async markJobAsDone(payload: string, gpgSign: boolean) {
+    this.guardThatThereIsAPendingJob();
+
+    const message = [`${this.markJobAsDoneCommitSubject()}`, `${payload}`];
 
     // TODO: signed commits
 
