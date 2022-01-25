@@ -10,11 +10,12 @@ async function run(): Promise<void> {
     const gitRepoDir = inputs.gitRepoDir ? inputs.gitRepoDir : process.cwd();
     const git: SimpleGit = simpleGit(gitRepoDir);
 
-    await core.group(`Debug`, async () => {
-      core.info(`Git repository directory: ${gitRepoDir}`);
-    });
-
     let queue = await Queue.create(inputs.queueName, gitRepoDir, git);
+
+    await core.group(`Debug`, async () => {
+      core.debug(`Git repository directory: ${gitRepoDir}`);
+      core.debug(`Queue messages: ${queue.getMessages()}`);
+    });
 
     switch (inputs.action) {
       case 'create-job':
