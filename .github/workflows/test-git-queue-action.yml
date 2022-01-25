@@ -15,6 +15,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Show default runner node version
+        run: node --version
+
       - uses: actions/setup-node@v2
         with:
           node-version: "16"
@@ -83,4 +86,5 @@ jobs:
       - name: Git log new commits
         if: ${{ steps.mark-job-as-done.outputs.job_created == 'true' }}
         run: |
-          git log "${{ steps.mark-job-as-done.outputs.job_commit }}..${{ steps.create-job.outputs.job_commit }}"
+          git log ${{ steps.mark-job-as-done.outputs.job_commit }}..${{ steps.create-job.outputs.job_commit }}
+
