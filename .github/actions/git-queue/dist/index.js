@@ -106,8 +106,7 @@ function run() {
             let inputs = yield context.getInputs();
             const gitRepoDir = inputs.gitRepoDir ? inputs.gitRepoDir : process.cwd();
             const git = (0, simple_git_1.default)(gitRepoDir);
-            yield core.group(`Inputs`, () => __awaiter(this, void 0, void 0, function* () {
-                core.info(`Queue name: ${inputs.queueName}`);
+            yield core.group(`Debug`, () => __awaiter(this, void 0, void 0, function* () {
                 core.info(`Git repository directory: ${gitRepoDir}`);
             }));
             let queue = yield queue_1.Queue.create(inputs.queueName, gitRepoDir, git);
