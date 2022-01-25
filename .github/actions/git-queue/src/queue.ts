@@ -149,7 +149,7 @@ export class Queue {
     }
   }
 
-  async dispatch(payload: string, gpgSign: boolean) {
+  async dispatch(payload: string, gpgSign: boolean): Promise<Commit> {
     this.guardThatThereIsNoPendingJobs();
 
     const message = [`${this.createJobCommitSubject()}`, `${payload}`];
