@@ -10,8 +10,7 @@ async function run(): Promise<void> {
     const gitRepoDir = inputs.gitRepoDir ? inputs.gitRepoDir : process.cwd();
     const git: SimpleGit = simpleGit(gitRepoDir);
 
-    await core.group(`Inputs`, async () => {
-      core.info(`Queue name: ${inputs.queueName}`);
+    await core.group(`Debug`, async () => {
       core.info(`Git repository directory: ${gitRepoDir}`);
     });
 
