@@ -77,4 +77,10 @@ jobs:
       - name: Mark job as done debug
         if: ${{ steps.mark-job-as-done.outputs.job_created == 'true' }}
         run: |
-          echo -e "job_commit: ${{ steps.get-next-job.outputs.job_commit }}"
+          echo -e "job_created: ${{ steps.create-job.outputs.job_created }}"
+          echo -e "job_commit: ${{ steps.mark-job-as-done.outputs.job_commit }}"
+
+      - name: Git log new commits
+        if: ${{ steps.mark-job-as-done.outputs.job_created == 'true' }}
+        run: |
+          git log "${{ steps.mark-job-as-done.outputs.job_commit }}..${{ steps.create-job.outputs.job_commit }}"
