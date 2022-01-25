@@ -44,7 +44,8 @@ function getInputs() {
         return {
             queueName: core.getInput('queue_name', { required: true }),
             action: core.getInput('action', { required: true }),
-            jobPayload: core.getInput('job_payload', { required: false })
+            jobPayload: core.getInput('job_payload', { required: false }),
+            gitRepoDir: core.getInput('git_repo_dir', { required: false })
         };
     });
 }
@@ -55,22 +56,6 @@ function setOutput(name, value) {
 }
 exports.setOutput = setOutput;
 //# sourceMappingURL=context.js.map
-
-/***/ }),
-
-/***/ 374:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.git = void 0;
-const simple_git_1 = __importDefault(__webpack_require__(959));
-exports.git = (0, simple_git_1.default)();
-//# sourceMappingURL=git.js.map
 
 /***/ }),
 
@@ -107,19 +92,25 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__webpack_require__(186));
 const context = __importStar(__webpack_require__(842));
 const queue_1 = __webpack_require__(65);
-const git_1 = __webpack_require__(374);
+const simple_git_1 = __importDefault(__webpack_require__(959));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             let inputs = yield context.getInputs();
-            if (inputs.queueName) {
-                core.info(`queue: ${inputs.queueName}`);
-            }
-            let queue = yield queue_1.Queue.create(inputs.queueName, git_1.git);
+            const gitRepoDir = inputs.gitRepoDir ? inputs.gitRepoDir : process.cwd();
+            const git = (0, simple_git_1.default)(gitRepoDir);
+            yield core.group(`Inputs`, () => __awaiter(this, void 0, void 0, function* () {
+                core.info(`Queue name: ${inputs.queueName}`);
+                core.info(`Git repository directory: ${gitRepoDir}`);
+            }));
+            let queue = yield queue_1.Queue.create(inputs.queueName, gitRepoDir, git);
             switch (inputs.action) {
                 case 'create-job':
                     const createJobCommit = yield queue.dispatch(inputs.jobPayload, false);
@@ -159,7 +150,7 @@ run();
 /***/ }),
 
 /***/ 65:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+/***/ (function(__unused_webpack_module, exports) {
 
 "use strict";
 
@@ -174,7 +165,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Queue = void 0;
-const simple_git_1 = __webpack_require__(959);
 class Message {
     constructor(commit) {
         this.commit = commit;
@@ -212,25 +202,26 @@ function noMessage() {
     });
 }
 class Queue {
-    constructor(name, git) {
+    constructor(name, gitRepoDir, git) {
         this.CREATE_JOB_SUBJECT_PREFIX = 'CLAIM LOCK: JOB: ';
         this.MARK_JOB_AS_DONE_SUBJECT_PREFIX = 'RELEASE LOCK: JOB DONE: ';
         this.name = name;
+        this.gitRepoDir = gitRepoDir;
         this.git = git;
         this.messages = [];
     }
-    static create(name, git) {
+    static create(name, gitRepoDir, git) {
         return __awaiter(this, void 0, void 0, function* () {
-            let queue = new Queue(name, git);
+            let queue = new Queue(name, gitRepoDir, git);
             yield queue.loadMessagesFromGit();
             return queue;
         });
     }
     loadMessagesFromGit() {
         return __awaiter(this, void 0, void 0, function* () {
-            const isRepo = yield this.git.checkIsRepo(simple_git_1.CheckRepoActions.IS_REPO_ROOT);
+            const isRepo = yield this.git.checkIsRepo();
             if (!isRepo) {
-                throw Error(`Invalid git dir`);
+                throw Error(`Invalid git dir: ${this.gitRepoDir}`);
             }
             const status = yield this.git.status();
             const currentBranch = status.current;
