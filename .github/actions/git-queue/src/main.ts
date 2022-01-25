@@ -18,6 +18,10 @@ async function run(): Promise<void> {
 
     switch (inputs.action) {
       case 'create-job':
+
+        // debug is only output if you set the secret `ACTIONS_STEP_DEBUG` to true
+        core.debug(`Create job ...`);
+
         const createJobCommit = await queue.dispatch(inputs.jobPayload, false);
 
         await core.group(`Setting outputs`, async () => {
@@ -27,6 +31,9 @@ async function run(): Promise<void> {
 
         break;
       case 'next-job':
+        // debug is only output if you set the secret `ACTIONS_STEP_DEBUG` to true
+        core.debug(`Get next job ...`);
+        
         const nextJob = queue.getNextJob();
 
         if (!nextJob.isEmpty()) {
@@ -39,6 +46,9 @@ async function run(): Promise<void> {
         break;
 
       case 'mark-job-as-done':
+        // debug is only output if you set the secret `ACTIONS_STEP_DEBUG` to true
+        core.debug(`Mark current job as done ...`);
+        
         const markJobAsDoneCommit = await queue.markJobAsDone(inputs.jobPayload, false);
 
         await core.group(`Setting outputs`, async () => {
