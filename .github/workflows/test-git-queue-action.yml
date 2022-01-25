@@ -43,7 +43,7 @@ jobs:
         with:
           queue_name: "Library Update [library-aaa]"
           action: "create-job"
-          job_payload: "job_payload"
+          job_payload: '{"field": "value", "state": "pending"}'
 
       - name: Create job debug
         run: |
@@ -75,7 +75,7 @@ jobs:
         with:
           queue_name: "Library Update [library-aaa]"
           action: "mark-job-as-done"
-          job_payload: "job_payload-done"
+          job_payload: '{"field": "value", "state": "done"}'
 
       - name: Mark job as done debug
         if: ${{ steps.mark-job-as-done.outputs.job_created == 'true' }}
