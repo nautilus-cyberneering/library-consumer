@@ -16,6 +16,9 @@ inputs:
       - mark-job-as-done
   job_payload:
     description: 'job payload'
+  git_repo_dir:
+    description: 'the git repository directory. Default is the current working dir.'
+    required: false
 outputs:
   job_created:
     description: 'boolean, true if the job was created successfully'

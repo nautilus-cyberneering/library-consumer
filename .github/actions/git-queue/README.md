@@ -35,32 +35,48 @@ jobs:
 
       - name: Create job
         id: create-job
-        uses: ./.github/actions/git-job
+        uses: ./.github/actions/git-queue
         with:
-          queue: "Library Update [library-aaa]"
+          queue_name: "Library Update [library-aaa]"
           action: "create-job"
-          job-payload: "job-payload"
+          job_payload: "job_payload"
+
+      - name: Create job debug
+        run: |
+          echo -e "job_created: ${{ steps.create-job.outputs.job_created }}"
+          echo -e "job_commit: ${{ steps.create-job.outputs.job_commit }}"
 
       - name: Mutual exclusion code
-        if: ${{ steps.create-job.outputs.job-created == 'true' }}
+        if: ${{ steps.create-job.outputs.job_created == 'true' }}
         run: echo "Running the job that requires mutual exclusion"
 
       - name: Get next job
         id: get-next-job
-        if: ${{ steps.create-job.outputs.job-created == 'true' }}
-        uses: ./.github/actions/git-job
+        if: ${{ steps.create-job.outputs.job_created == 'true' }}
+        uses: ./.github/actions/git-queue
         with:
-          queue: "Library Update [library-aaa]"
+          queue_name: "Library Update [library-aaa]"
           action: "next-job"
+
+      - name: Get next job debug
+        if: ${{ steps.create-job.outputs.job_created == 'true' }}
+        run: |
+          echo -e "job_payload: ${{ steps.get-next-job.outputs.job_payload }}"
+          echo -e "job_commit: ${{ steps.get-next-job.outputs.job_commit }}"
 
       - name: Mark job as done
         id: mark-job-as-done
-        if: ${{ steps.create-job.outputs.job-created == 'true' }}              
-        uses: ./.github/actions/git-job
+        if: ${{ steps.create-job.outputs.job_created == 'true' }}
+        uses: ./.github/actions/git-queue
         with:
-          queue: "Library Update [library-aaa]"
+          queue_name: "Library Update [library-aaa]"
           action: "mark-job-as-done"
-          job-payload: "job-payload-done"
+          job_payload: "job_payload-done"
+
+      - name: Mark job as done debug
+        if: ${{ steps.mark-job-as-done.outputs.job_created == 'true' }}
+        run: |
+          echo -e "job_commit: ${{ steps.get-next-job.outputs.job_commit }}"
 ```
 
 ## Customizing
@@ -73,7 +89,8 @@ Following inputs are available
 |---------------|---------|---------------------------------------|
 | `queue_name` | String | Queue name |
 | `action` | String | Queue action: [ `next-job`, `create-job`, `mark-job-as-done` ] |
-| `job_-_payload` | String | The job payload |
+| `job_payload` | String | The job payload |
+| `git_Repo_dir` | String | The git repository directory. Default value is the current working dir |
 
 ### outputs
 

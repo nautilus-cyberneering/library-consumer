@@ -5,13 +5,15 @@ export interface Inputs {
   queueName: string;
   action: string;
   jobPayload: string;
+  gitRepoDir: string;
 }
 
 export async function getInputs(): Promise<Inputs> {
   return {
     queueName: core.getInput('queue_name', {required: true}),
     action: core.getInput('action', {required: true}),
-    jobPayload: core.getInput('job_payload', {required: false})
+    jobPayload: core.getInput('job_payload', {required: false}),
+    gitRepoDir: core.getInput('git_repo_dir', {required: false})
   };
 }
 

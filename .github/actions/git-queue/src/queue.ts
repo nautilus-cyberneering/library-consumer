@@ -1,5 +1,4 @@
 import {DefaultLogFields, SimpleGit, CheckRepoActions, GitResponseError} from 'simple-git';
-import * as git from './git';
 
 class Message {
   commit: DefaultLogFields;
@@ -47,28 +46,30 @@ function noMessage() {
 
 export class Queue {
   name: string;
+  gitRepoDir: string;
   git: SimpleGit;
   messages: ReadonlyArray<Message>;
 
   readonly CREATE_JOB_SUBJECT_PREFIX = 'CLAIM LOCK: JOB: ';
   readonly MARK_JOB_AS_DONE_SUBJECT_PREFIX = 'RELEASE LOCK: JOB DONE: ';
 
-  private constructor(name: string, git: SimpleGit) {
+  private constructor(name: string, gitRepoDir: string, git: SimpleGit) {
     this.name = name;
+    this.gitRepoDir = gitRepoDir;
     this.git = git;
     this.messages = [];
   }
 
-  static async create(name: string, git: SimpleGit): Promise<Queue> {
-    let queue = new Queue(name, git);
+  static async create(name: string, gitRepoDir: string, git: SimpleGit): Promise<Queue> {
+    let queue = new Queue(name, gitRepoDir, git);
     await queue.loadMessagesFromGit();
     return queue;
   }
 
   async loadMessagesFromGit() {
-    const isRepo = await this.git.checkIsRepo(CheckRepoActions.IS_REPO_ROOT);
+    const isRepo = await this.git.checkIsRepo();
     if (!isRepo) {
-      throw Error(`Invalid git dir`);
+      throw Error(`Invalid git dir: ${this.gitRepoDir}`);
     }
 
     const status = await this.git.status();
