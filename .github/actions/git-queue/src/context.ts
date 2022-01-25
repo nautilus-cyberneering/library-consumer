@@ -9,9 +9,9 @@ export interface Inputs {
 
 export async function getInputs(): Promise<Inputs> {
   return {
-    queueName: core.getInput('queue_name', { required: true }),
-    action: core.getInput('action', { required: true }),
-    jobPayload: core.getInput('job_payload', {required: false}),
+    queueName: core.getInput('queue_name', {required: true}),
+    action: core.getInput('action', {required: true}),
+    jobPayload: core.getInput('job_payload', {required: false})
   };
 }
 
@@ -19,4 +19,3 @@ export async function getInputs(): Promise<Inputs> {
 export function setOutput(name: string, value: any): void {
   issueCommand('set-output', {name}, value);
 }
-
