@@ -19,20 +19,15 @@ jobs:
         with:
           node-version: '16'
 
-      - name: Install dependencies
+      - name: Install dependencies and build
         run: |
           cd ./.github/actions/git-queue
-          yarn install
+          yarn install && yarn build
 
       - name: Test
         run: |
           cd ./.github/actions/git-queue
           yarn test          
-
-      - name: Rebuild the dist/ directory
-        run: |
-          cd ./.github/actions/git-queue
-          yarn build
 
       - name: Create job
         id: create-job
