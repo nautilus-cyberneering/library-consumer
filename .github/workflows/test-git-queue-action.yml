@@ -83,8 +83,8 @@ jobs:
           echo -e "job_created: ${{ steps.create-job.outputs.job_created }}"
           echo -e "job_commit: ${{ steps.mark-job-as-done.outputs.job_commit }}"
 
-      - name: Git log new commits
+      - name: Show new commits
         if: ${{ steps.mark-job-as-done.outputs.job_created == 'true' }}
         run: |
-          git log ${{ steps.mark-job-as-done.outputs.job_commit }}..${{ steps.create-job.outputs.job_commit }}
-
+          git show ${{ steps.create-job.outputs.job_commit }}
+          git show ${{ steps.mark-job-as-done.outputs.job_commit }}
