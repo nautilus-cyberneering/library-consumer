@@ -44,7 +44,7 @@ function getInputs() {
         return {
             queueName: core.getInput('queue_name', { required: true }),
             action: core.getInput('action', { required: true }),
-            jobPayload: core.getInput('job_payload', { required: false }),
+            jobPayload: core.getInput('job_payload', { required: false })
         };
     });
 }
@@ -119,15 +119,18 @@ function run() {
             if (inputs.queueName) {
                 core.info(`queue: ${inputs.queueName}`);
             }
-            const gitLog = yield git_1.git.log();
-            let queue = new queue_1.Queue(inputs.queueName, git_1.git);
+            let queue = yield queue_1.Queue.create(inputs.queueName, git_1.git);
             switch (inputs.action) {
                 case 'create-job':
-                    // TODO
+                    const createJobCommit = yield queue.dispatch(inputs.jobPayload, false);
+                    yield core.group(`Setting outputs`, () => __awaiter(this, void 0, void 0, function* () {
+                        context.setOutput('job_created', true);
+                        context.setOutput('job_commit', createJobCommit.hash);
+                    }));
                     break;
                 case 'next-job':
                     const nextJob = queue.getNextJob();
-                    if (nextJob !== null) {
+                    if (!nextJob.isEmpty()) {
                         yield core.group(`Setting outputs`, () => __awaiter(this, void 0, void 0, function* () {
                             context.setOutput('job_commit', nextJob.commit_hash());
                             context.setOutput('job_payload', nextJob.payload());
@@ -135,7 +138,11 @@ function run() {
                     }
                     break;
                 case 'mark-job-as-done':
-                    // TODO
+                    const markJobAsDoneCommit = yield queue.markJobAsDone(inputs.jobPayload, false);
+                    yield core.group(`Setting outputs`, () => __awaiter(this, void 0, void 0, function* () {
+                        context.setOutput('job_created', true);
+                        context.setOutput('job_commit', markJobAsDoneCommit.hash);
+                    }));
                     break;
                 default:
                     core.error('Invalid action');
@@ -188,6 +195,11 @@ class CreateJobMessage extends Message {
 }
 class MarkJobAsDoneMessage extends Message {
 }
+class Commit {
+    constructor(hash) {
+        this.hash = hash;
+    }
+}
 function noMessage() {
     return new NoMessage({
         hash: '',
@@ -207,7 +219,7 @@ class Queue {
         this.git = git;
         this.messages = [];
     }
-    static initialize(name, git) {
+    static create(name, git) {
         return __awaiter(this, void 0, void 0, function* () {
             let queue = new Queue(name, git);
             yield queue.loadMessagesFromGit();
@@ -247,7 +259,7 @@ class Queue {
         if (this.isMarkJobAsDoneCommit(commit)) {
             return new MarkJobAsDoneMessage(commit);
         }
-        throw new Error(`Invalid queue commit: ${commit.hash}`);
+        throw new Error(`Invalid queue message in commit: ${commit.hash}`);
     }
     createJobCommitSubject() {
         return `${this.CREATE_JOB_SUBJECT_PREFIX}${this.name}`;
@@ -274,12 +286,36 @@ class Queue {
         const latestMessage = this.getLatestMessage();
         return latestMessage instanceof CreateJobMessage ? latestMessage : noMessage();
     }
+    guardThatThereIsNoPendingJobs() {
+        if (!this.getNextJob().isEmpty()) {
+            throw new Error(`Can't create a new job. There is already a pending job in commit: ${this.getNextJob().commit_hash}`);
+        }
+    }
+    guardThatThereIsAPendingJob() {
+        if (this.getNextJob().isEmpty()) {
+            throw new Error(`Can't mark job as done. There isn't any pending job`);
+        }
+    }
     dispatch(payload, gpgSign) {
         return __awaiter(this, void 0, void 0, function* () {
+            this.guardThatThereIsNoPendingJobs();
             const message = [`${this.createJobCommitSubject()}`, `${payload}`];
+            // TODO: signed commits
             const options = Object.assign({ '--allow-empty': null }, (!gpgSign && { '--no-gpg-sign': null }));
-            yield this.git.commit(message, options);
+            const commitResult = yield this.git.commit(message, options);
             yield this.loadMessagesFromGit();
+            return new Commit(commitResult.commit);
+        });
+    }
+    markJobAsDone(payload, gpgSign) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.guardThatThereIsAPendingJob();
+            const message = [`${this.markJobAsDoneCommitSubject()}`, `${payload}`];
+            // TODO: signed commits
+            const options = Object.assign({ '--allow-empty': null }, (!gpgSign && { '--no-gpg-sign': null }));
+            const commitResult = yield this.git.commit(message, options);
+            yield this.loadMessagesFromGit();
+            return new Commit(commitResult.commit);
         });
     }
 }
