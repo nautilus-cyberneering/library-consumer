@@ -15,6 +15,25 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: |
+          cd ./.github/actions/git-queue
+          yarn install
+
+      - name: Test
+        run: |
+          cd ./.github/actions/git-queue
+          yarn test          
+
+      - name: Rebuild the dist/ directory
+        run: |
+          cd ./.github/actions/git-queue
+          yarn build
+
       - name: Create job
         id: create-job
         uses: ./.github/actions/git-queue
