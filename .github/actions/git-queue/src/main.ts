@@ -1,17 +1,21 @@
 import * as core from '@actions/core';
 import * as context from './context';
 import {Queue} from './queue';
-import {git} from './git';
+import simpleGit, {SimpleGit, CleanOptions} from 'simple-git';
 
 async function run(): Promise<void> {
   try {
     let inputs: context.Inputs = await context.getInputs();
 
-    if (inputs.queueName) {
-      core.info(`queue: ${inputs.queueName}`);
-    }
+    const gitRepoDir = inputs.gitRepoDir ? inputs.gitRepoDir : process.cwd();
+    const git: SimpleGit = simpleGit(gitRepoDir);
 
-    let queue = await Queue.create(inputs.queueName, git);
+    await core.group(`Inputs`, async () => {
+      core.info(`Queue name: ${inputs.queueName}`);
+      core.info(`Git repository directory: ${gitRepoDir}`);
+    });
+
+    let queue = await Queue.create(inputs.queueName, gitRepoDir, git);
 
     switch (inputs.action) {
       case 'create-job':
