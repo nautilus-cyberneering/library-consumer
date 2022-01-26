@@ -4,22 +4,22 @@ import {nullCommit} from './commit';
 export const CREATE_JOB_SUBJECT_PREFIX = 'CLAIM LOCK: JOB: ';
 export const MARK_JOB_AS_DONE_SUBJECT_PREFIX = 'RELEASE LOCK: JOB DONE: ';
 
-export class StoredMessage {
+export abstract class StoredMessage {
   commit: DefaultLogFields;
 
   constructor(commit: DefaultLogFields) {
     this.commit = commit;
   }
 
-  commitHash(): String {
+  commitHash(): string {
     return this.commit.hash;
   }
 
-  payload(): String {
+  payload(): string {
     return this.commit.body.trim();
   }
 
-  isEmpty(): Boolean {
+  isEmpty(): boolean {
     return this instanceof ReadNullMessage;
   }
 }
@@ -32,22 +32,16 @@ export function readNullMessage() {
   return new ReadNullMessage(nullCommit());
 }
 
-function isCreateJobCommit(commitMessage: string): boolean {
-  return commitMessage.startsWith(CREATE_JOB_SUBJECT_PREFIX) ? true : false;
-}
-
-function isMarkJobAsDoneCommit(commitMessage: string): boolean {
-  return commitMessage.startsWith(MARK_JOB_AS_DONE_SUBJECT_PREFIX) ? true : false;
-}
-
 export function messageFactoryFromCommit(commit: DefaultLogFields) {
-  if (isCreateJobCommit(commit.message)) {
+  const commitSubject = commit.message;
+
+  if (commitSubject.startsWith(CREATE_JOB_SUBJECT_PREFIX)) {
     return new ReadCreateJobMessage(commit);
   }
 
-  if (isMarkJobAsDoneCommit(commit.message)) {
+  if (commitSubject.startsWith(MARK_JOB_AS_DONE_SUBJECT_PREFIX)) {
     return new ReadMarkJobAsDoneMessage(commit);
   }
 
-  throw new Error(`Invalid queue message in commit: ${commit.hash}`);
+  throw new Error(`Queue message not found in commit: ${commit.hash}`);
 }
