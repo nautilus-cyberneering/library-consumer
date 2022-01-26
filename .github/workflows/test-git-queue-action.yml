@@ -74,5 +74,5 @@ jobs:
       - name: Show new commits
         if: ${{ steps.mark-job-as-done.outputs.job_created == 'true' }}
         run: |
-          git show ${{ steps.create-job.outputs.job_commit }}
-          git show ${{ steps.mark-job-as-done.outputs.job_commit }}
+          git show --show-signature ${{ steps.create-job.outputs.job_commit }}
+          git show --show-signature ${{ steps.mark-job-as-done.outputs.job_commit }}
