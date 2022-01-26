@@ -26,7 +26,7 @@ async function newInitializedTmpGitDir() {
   return gitRepoDir;
 }
 
-function createNewJob() {
+function createJob() {
   process.env['INPUT_ACTION'] = 'create-job';
   process.env['INPUT_JOB_PAYLOAD'] = dummyPayload();
   executeAction(process.env);
@@ -53,7 +53,7 @@ describe('GitHub Action', () => {
   });
 
   it('should get the next job', async () => {
-    createNewJob();
+    createJob();
 
     process.env['INPUT_ACTION'] = 'next-job';
 
@@ -64,7 +64,7 @@ describe('GitHub Action', () => {
   });
 
   it('should mark the pending job as done', async () => {
-    createNewJob();
+    createJob();
 
     process.env['INPUT_ACTION'] = 'mark-job-as-done';
 
