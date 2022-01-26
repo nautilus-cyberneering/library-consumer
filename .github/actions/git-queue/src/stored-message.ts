@@ -1,7 +1,7 @@
 import {DefaultLogFields} from 'simple-git';
 import {nullCommit} from './commit';
 
-export class ReadMessage {
+export class StoredMessage {
   commit: DefaultLogFields;
 
   constructor(commit: DefaultLogFields) {
@@ -21,9 +21,9 @@ export class ReadMessage {
   }
 }
 
-export class ReadNullMessage extends ReadMessage {}
-export class ReadCreateJobMessage extends ReadMessage {}
-export class ReadMarkJobAsDoneMessage extends ReadMessage {}
+export class ReadNullMessage extends StoredMessage {}
+export class ReadCreateJobMessage extends StoredMessage {}
+export class ReadMarkJobAsDoneMessage extends StoredMessage {}
 
 export function readNullMessage() {
   return new ReadNullMessage(nullCommit());

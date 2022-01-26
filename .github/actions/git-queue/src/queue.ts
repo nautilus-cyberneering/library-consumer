@@ -1,12 +1,12 @@
 import {DefaultLogFields, SimpleGit, CheckRepoActions, GitResponseError} from 'simple-git';
 import {Commit} from './commit';
-import {ReadCreateJobMessage, ReadMarkJobAsDoneMessage, ReadMessage, readNullMessage} from './read-message';
+import {ReadCreateJobMessage, ReadMarkJobAsDoneMessage, StoredMessage, readNullMessage} from './stored-message';
 
 export class Queue {
   name: string;
   gitRepoDir: string;
   git: SimpleGit;
-  messages: ReadonlyArray<ReadMessage>;
+  storedMessages: ReadonlyArray<StoredMessage>;
 
   readonly CREATE_JOB_SUBJECT_PREFIX = 'CLAIM LOCK: JOB: ';
   readonly MARK_JOB_AS_DONE_SUBJECT_PREFIX = 'RELEASE LOCK: JOB DONE: ';
@@ -15,7 +15,7 @@ export class Queue {
     this.name = name;
     this.gitRepoDir = gitRepoDir;
     this.git = git;
-    this.messages = [];
+    this.storedMessages = [];
   }
 
   static async create(name: string, gitRepoDir: string, git: SimpleGit): Promise<Queue> {
@@ -36,7 +36,7 @@ export class Queue {
     try {
       const gitLog = await this.git.log();
       const commits = gitLog.all.filter(commit => this.commitBelongsToQueue(commit));
-      this.messages = commits.map(commit => this.messageFactory(commit));
+      this.storedMessages = commits.map(commit => this.messageFactory(commit));
     } catch (err) {
       if ((err as GitResponseError).message.includes(`fatal: your current branch '${currentBranch}' does not have any commits yet`)) {
         // no commits yet
@@ -78,19 +78,19 @@ export class Queue {
     return commit.message == this.markJobAsDoneCommitSubject() ? true : false;
   }
 
-  getMessages(): ReadonlyArray<ReadMessage> {
-    return this.messages;
+  getMessages(): ReadonlyArray<StoredMessage> {
+    return this.storedMessages;
   }
 
-  getLatestMessage(): ReadMessage {
-    return this.isEmpty() ? readNullMessage() : this.messages[0];
+  getLatestMessage(): StoredMessage {
+    return this.isEmpty() ? readNullMessage() : this.storedMessages[0];
   }
 
   isEmpty(): boolean {
-    return this.messages.length == 0;
+    return this.storedMessages.length == 0;
   }
 
-  getNextJob(): ReadMessage {
+  getNextJob(): StoredMessage {
     const latestMessage = this.getLatestMessage();
     return latestMessage instanceof ReadCreateJobMessage ? latestMessage : readNullMessage();
   }
