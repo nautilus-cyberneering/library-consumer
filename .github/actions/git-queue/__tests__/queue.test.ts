@@ -15,7 +15,7 @@ describe('Queue', () => {
       field: 'value'
     });
 
-    await queue.dispatch(payload);
+    await queue.createJob(payload);
 
     const nextJob = queue.getNextJob();
 
@@ -35,7 +35,7 @@ describe('Queue', () => {
     });
     const signCommit = false;
 
-    await queue.dispatch(payload);
+    await queue.createJob(payload);
     await queue.markJobAsDone(payload);
 
     const nextJob = queue.getNextJob();
@@ -57,7 +57,7 @@ describe('Queue', () => {
 
     const signingKey = '88966A5B8C01BD04F3DA440427304EDD6079B81C';
 
-    await queue.dispatch(payload, signingKey);
+    await queue.createJob(payload, signingKey);
 
     const output = cp.execFileSync('git', ['log', '--show-signature', '-n1']).toString();
 

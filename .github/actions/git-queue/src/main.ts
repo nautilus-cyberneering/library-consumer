@@ -13,7 +13,7 @@ async function run(): Promise<void> {
 
     switch (inputs.action) {
       case 'create-job':
-        const createJobCommit = await queue.dispatch(inputs.jobPayload);
+        const createJobCommit = await queue.createJob(inputs.jobPayload);
 
         await core.group(`Setting outputs`, async () => {
           context.setOutput('job_created', true);

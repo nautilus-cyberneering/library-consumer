@@ -1,6 +1,7 @@
 import {DefaultLogFields, SimpleGit, CheckRepoActions, GitResponseError} from 'simple-git';
 import {Commit} from './commit';
-import {ReadCreateJobMessage, StoredMessage, readNullMessage, messageFactoryFromCommit, createJobCommitSubject, markJobAsDoneCommitSubject} from './stored-message';
+import {ReadCreateJobMessage, StoredMessage, readNullMessage, messageFactoryFromCommit, CREATE_JOB_SUBJECT_PREFIX, MARK_JOB_AS_DONE_SUBJECT_PREFIX} from './stored-message';
+import {CreateJobMessage, MarkJobAsDoneMessage, Message} from './message';
 
 export class Queue {
   name: string;
@@ -104,23 +105,40 @@ export class Queue {
     };
   }
 
-  async dispatch(payload: string, signingKey: string = ''): Promise<Commit> {
+  buildCommitMessage(message: Message): string[] {
+    let commitSubject: string;
+    if (message instanceof CreateJobMessage) {
+      commitSubject = `${CREATE_JOB_SUBJECT_PREFIX}${this.name}`;
+    } else if (message instanceof MarkJobAsDoneMessage) {
+      commitSubject = `${MARK_JOB_AS_DONE_SUBJECT_PREFIX}${this.name}`;
+    } else {
+      throw Error(`Invalid Message type: ${typeof message}`);
+    }
+
+    const commitBody = message.getPayload();
+
+    const commitMessage = [commitSubject, commitBody];
+
+    return commitMessage;
+  }
+
+  async createJob(payload: string, signingKey: string = ''): Promise<Commit> {
     this.guardThatThereIsNoPendingJobs();
 
-    const message = [`${createJobCommitSubject(this.name)}`, `${payload}`];
+    const message = new CreateJobMessage(payload);
 
-    const commit = await this.commitAndPush(message, signingKey);
-
-    return commit;
+    return this.commitMessage(message, signingKey);
   }
 
   async markJobAsDone(payload: string, signingKey: string = '') {
     this.guardThatThereIsAPendingJob();
 
-    const message = [`${markJobAsDoneCommitSubject(this.name)}`, `${payload}`];
+    const message = new MarkJobAsDoneMessage(payload);
 
-    const commit = await this.commitAndPush(message, signingKey);
+    return this.commitMessage(message, signingKey);
+  }
 
-    return commit;
+  async commitMessage(message: Message, signingKey: string = ''): Promise<Commit> {
+    return await this.commitAndPush(this.buildCommitMessage(message), signingKey);
   }
 }
