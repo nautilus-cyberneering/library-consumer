@@ -7,15 +7,15 @@ class Message {
     this.commit = commit;
   }
 
-  commit_hash() {
+  commitHash(): String {
     return this.commit.hash;
   }
 
-  payload() {
+  payload(): String {
     return this.commit.body.trim();
   }
 
-  isEmpty() {
+  isEmpty(): Boolean {
     return this instanceof NoMessage;
   }
 }
@@ -139,7 +139,7 @@ export class Queue {
 
   guardThatThereIsNoPendingJobs() {
     if (!this.getNextJob().isEmpty()) {
-      throw new Error(`Can't create a new job. There is already a pending job in commit: ${this.getNextJob().commit_hash}`);
+      throw new Error(`Can't create a new job. There is already a pending job in commit: ${this.getNextJob().commitHash()}`);
     }
   }
 
