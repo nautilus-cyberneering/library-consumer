@@ -18,10 +18,6 @@ jobs:
       - name: Show default runner node version
         run: node --version
 
-      - uses: actions/setup-node@v2
-        with:
-          node-version: "16"
-
       - name: Set git config user to GitHub Bot
         run: |
           git config --global user.name 'github-actions[bot]'
