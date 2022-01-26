@@ -6,7 +6,6 @@ import simpleGit, {SimpleGit, CleanOptions} from 'simple-git';
 async function run(): Promise<void> {
   try {
     let inputs: context.Inputs = await context.getInputs();
-
     const gitRepoDir = inputs.gitRepoDir ? inputs.gitRepoDir : process.cwd();
     const git: SimpleGit = simpleGit(gitRepoDir);
 
@@ -14,7 +13,7 @@ async function run(): Promise<void> {
 
     switch (inputs.action) {
       case 'create-job':
-        const createJobCommit = await queue.dispatch(inputs.jobPayload, false);
+        const createJobCommit = await queue.dispatch(inputs.jobPayload);
 
         await core.group(`Setting outputs`, async () => {
           context.setOutput('job_created', true);
@@ -41,7 +40,7 @@ async function run(): Promise<void> {
         break;
 
       case 'mark-job-as-done':
-        const markJobAsDoneCommit = await queue.markJobAsDone(inputs.jobPayload, false);
+        const markJobAsDoneCommit = await queue.markJobAsDone(inputs.jobPayload);
 
         await core.group(`Setting outputs`, async () => {
           context.setOutput('job_created', true);

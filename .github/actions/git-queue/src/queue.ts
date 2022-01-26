@@ -149,51 +149,51 @@ export class Queue {
     }
   }
 
-  async gitPush() {
-    if (await this.git.remote([]) != '') {
+  async commitAndPush(message: string[], signingKey: string = ''): Promise<Commit> {
+    const commit = await this.commit(message, signingKey);
+    this.push();
+    return commit;
+  }
+
+  async commit(message: string[], signingKey: string = ''): Promise<Commit> {
+    const commitResult = await this.git.commit(message, this.commitOptions(signingKey));
+    await this.loadMessagesFromGit();
+    return new Commit(commitResult.commit);
+  }
+
+  async push() {
+    if ((await this.git.remote([])) != '') {
       this.git.push();
     }
   }
 
-  async dispatch(payload: string, gpgSign: boolean): Promise<Commit> {
+  commitOptions(signingKey: string = '') {
+    return {
+      '--allow-empty': null,
+      ...(signingKey == '' && {'--no-gpg-sign': null}),
+      ...(signingKey != '' && {
+        '--gpg-sign': signingKey
+      })
+    };
+  }
+
+  async dispatch(payload: string, signingKey: string = ''): Promise<Commit> {
     this.guardThatThereIsNoPendingJobs();
 
     const message = [`${this.createJobCommitSubject()}`, `${payload}`];
 
-    // TODO: signed commits
+    const commit = await this.commitAndPush(message, signingKey);
 
-    const options = {
-      '--allow-empty': null,
-      ...(!gpgSign && {'--no-gpg-sign': null})
-    };
-
-    const commitResult = await this.git.commit(message, options);
-
-    this.gitPush();
-
-    await this.loadMessagesFromGit();
-
-    return new Commit(commitResult.commit);
+    return commit;
   }
 
-  async markJobAsDone(payload: string, gpgSign: boolean) {
+  async markJobAsDone(payload: string, signingKey: string = '') {
     this.guardThatThereIsAPendingJob();
 
     const message = [`${this.markJobAsDoneCommitSubject()}`, `${payload}`];
 
-    // TODO: signed commits
+    const commit = await this.commitAndPush(message, signingKey);
 
-    const options = {
-      '--allow-empty': null,
-      ...(!gpgSign && {'--no-gpg-sign': null})
-    };
-
-    const commitResult = await this.git.commit(message, options);
-
-    this.gitPush();
-
-    await this.loadMessagesFromGit();
-
-    return new Commit(commitResult.commit);
+    return commit;
   }
 }
