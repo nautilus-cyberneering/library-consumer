@@ -41,11 +41,6 @@ jobs:
           action: "create-job"
           job_payload: '{"field": "value", "state": "pending"}'
 
-      - name: Create job debug
-        run: |
-          echo -e "job_created: ${{ steps.create-job.outputs.job_created }}"
-          echo -e "job_commit: ${{ steps.create-job.outputs.job_commit }}"
-
       - name: Mutual exclusion code
         if: ${{ steps.create-job.outputs.job_created == 'true' }}
         run: echo "Running the job that requires mutual exclusion"
@@ -58,12 +53,6 @@ jobs:
           queue_name: "Library Update [library-aaa]"
           action: "next-job"
 
-      - name: Get next job debug
-        if: ${{ steps.create-job.outputs.job_created == 'true' }}
-        run: |
-          echo -e "job_payload: ${{ steps.get-next-job.outputs.job_payload }}"
-          echo -e "job_commit: ${{ steps.get-next-job.outputs.job_commit }}"
-
       - name: Mark job as done
         id: mark-job-as-done
         if: ${{ steps.create-job.outputs.job_created == 'true' }}
@@ -72,12 +61,6 @@ jobs:
           queue_name: "Library Update [library-aaa]"
           action: "mark-job-as-done"
           job_payload: '{"field": "value", "state": "done"}'
-
-      - name: Mark job as done debug
-        if: ${{ steps.mark-job-as-done.outputs.job_created == 'true' }}
-        run: |
-          echo -e "job_created: ${{ steps.create-job.outputs.job_created }}"
-          echo -e "job_commit: ${{ steps.mark-job-as-done.outputs.job_commit }}"
 
       - name: Show new commits
         if: ${{ steps.mark-job-as-done.outputs.job_created == 'true' }}
