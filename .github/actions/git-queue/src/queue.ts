@@ -1,6 +1,6 @@
 import {DefaultLogFields, SimpleGit, CheckRepoActions, GitResponseError} from 'simple-git';
 import {Commit} from './commit';
-import {ReadCreateJobMessage, StoredMessage, readNullMessage, messageFactoryFromCommit, CREATE_JOB_SUBJECT_PREFIX, MARK_JOB_AS_DONE_SUBJECT_PREFIX} from './stored-message';
+import {StoredCreateJobMessage, StoredMessage, nullMessage, messageFactoryFromCommit, CREATE_JOB_SUBJECT_PREFIX, MARK_JOB_AS_DONE_SUBJECT_PREFIX} from './stored-message';
 import {CreateJobMessage, MarkJobAsDoneMessage, Message} from './message';
 
 export class Queue {
@@ -53,7 +53,7 @@ export class Queue {
   }
 
   getLatestMessage(): StoredMessage {
-    return this.isEmpty() ? readNullMessage() : this.storedMessages[0];
+    return this.isEmpty() ? nullMessage() : this.storedMessages[0];
   }
 
   isEmpty(): boolean {
@@ -62,7 +62,7 @@ export class Queue {
 
   getNextJob(): StoredMessage {
     const latestMessage = this.getLatestMessage();
-    return latestMessage instanceof ReadCreateJobMessage ? latestMessage : readNullMessage();
+    return latestMessage instanceof StoredCreateJobMessage ? latestMessage : nullMessage();
   }
 
   guardThatThereIsNoPendingJobs() {

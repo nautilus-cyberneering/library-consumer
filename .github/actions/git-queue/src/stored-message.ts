@@ -20,27 +20,27 @@ export abstract class StoredMessage {
   }
 
   isEmpty(): boolean {
-    return this instanceof ReadNullMessage;
+    return this instanceof NullMessage;
   }
 }
 
-export class ReadNullMessage extends StoredMessage {}
-export class ReadCreateJobMessage extends StoredMessage {}
-export class ReadMarkJobAsDoneMessage extends StoredMessage {}
+export class NullMessage extends StoredMessage {}
+export class StoredCreateJobMessage extends StoredMessage {}
+export class StoredMarkJobAsDoneMessage extends StoredMessage {}
 
-export function readNullMessage() {
-  return new ReadNullMessage(nullCommit());
+export function nullMessage() {
+  return new NullMessage(nullCommit());
 }
 
 export function messageFactoryFromCommit(commit: DefaultLogFields) {
   const commitSubject = commit.message;
 
   if (commitSubject.startsWith(CREATE_JOB_SUBJECT_PREFIX)) {
-    return new ReadCreateJobMessage(commit);
+    return new StoredCreateJobMessage(commit);
   }
 
   if (commitSubject.startsWith(MARK_JOB_AS_DONE_SUBJECT_PREFIX)) {
-    return new ReadMarkJobAsDoneMessage(commit);
+    return new StoredMarkJobAsDoneMessage(commit);
   }
 
   throw new Error(`Queue message not found in commit: ${commit.hash}`);
