@@ -1,15 +1,12 @@
 import {DefaultLogFields, SimpleGit, CheckRepoActions, GitResponseError} from 'simple-git';
 import {Commit} from './commit';
-import {ReadCreateJobMessage, ReadMarkJobAsDoneMessage, StoredMessage, readNullMessage} from './stored-message';
+import {ReadCreateJobMessage, StoredMessage, readNullMessage, messageFactoryFromCommit, createJobCommitSubject, markJobAsDoneCommitSubject} from './stored-message';
 
 export class Queue {
   name: string;
   gitRepoDir: string;
   git: SimpleGit;
   storedMessages: ReadonlyArray<StoredMessage>;
-
-  readonly CREATE_JOB_SUBJECT_PREFIX = 'CLAIM LOCK: JOB: ';
-  readonly MARK_JOB_AS_DONE_SUBJECT_PREFIX = 'RELEASE LOCK: JOB DONE: ';
 
   private constructor(name: string, gitRepoDir: string, git: SimpleGit) {
     this.name = name;
@@ -36,7 +33,7 @@ export class Queue {
     try {
       const gitLog = await this.git.log();
       const commits = gitLog.all.filter(commit => this.commitBelongsToQueue(commit));
-      this.storedMessages = commits.map(commit => this.messageFactory(commit));
+      this.storedMessages = commits.map(commit => messageFactoryFromCommit(commit));
     } catch (err) {
       if ((err as GitResponseError).message.includes(`fatal: your current branch '${currentBranch}' does not have any commits yet`)) {
         // no commits yet
@@ -47,35 +44,7 @@ export class Queue {
   }
 
   commitBelongsToQueue(commit: DefaultLogFields) {
-    return this.isCreateJobCommit(commit) || this.isMarkJobAsDoneCommit(commit) ? true : false;
-  }
-
-  messageFactory(commit: DefaultLogFields) {
-    if (this.isCreateJobCommit(commit)) {
-      return new ReadCreateJobMessage(commit);
-    }
-
-    if (this.isMarkJobAsDoneCommit(commit)) {
-      return new ReadMarkJobAsDoneMessage(commit);
-    }
-
-    throw new Error(`Invalid queue message in commit: ${commit.hash}`);
-  }
-
-  createJobCommitSubject() {
-    return `${this.CREATE_JOB_SUBJECT_PREFIX}${this.name}`;
-  }
-
-  markJobAsDoneCommitSubject() {
-    return `${this.MARK_JOB_AS_DONE_SUBJECT_PREFIX}${this.name}`;
-  }
-
-  isCreateJobCommit(commit: DefaultLogFields): boolean {
-    return commit.message == this.createJobCommitSubject() ? true : false;
-  }
-
-  isMarkJobAsDoneCommit(commit: DefaultLogFields): boolean {
-    return commit.message == this.markJobAsDoneCommitSubject() ? true : false;
+    return commit.message.endsWith(this.name) ? true : false;
   }
 
   getMessages(): ReadonlyArray<StoredMessage> {
@@ -138,7 +107,7 @@ export class Queue {
   async dispatch(payload: string, signingKey: string = ''): Promise<Commit> {
     this.guardThatThereIsNoPendingJobs();
 
-    const message = [`${this.createJobCommitSubject()}`, `${payload}`];
+    const message = [`${createJobCommitSubject(this.name)}`, `${payload}`];
 
     const commit = await this.commitAndPush(message, signingKey);
 
@@ -148,7 +117,7 @@ export class Queue {
   async markJobAsDone(payload: string, signingKey: string = '') {
     this.guardThatThereIsAPendingJob();
 
-    const message = [`${this.markJobAsDoneCommitSubject()}`, `${payload}`];
+    const message = [`${markJobAsDoneCommitSubject(this.name)}`, `${payload}`];
 
     const commit = await this.commitAndPush(message, signingKey);
 
