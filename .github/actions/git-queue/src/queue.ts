@@ -1,58 +1,12 @@
 import {DefaultLogFields, SimpleGit, CheckRepoActions, GitResponseError} from 'simple-git';
-
-class Message {
-  commit: DefaultLogFields;
-
-  constructor(commit: DefaultLogFields) {
-    this.commit = commit;
-  }
-
-  commitHash(): String {
-    return this.commit.hash;
-  }
-
-  payload(): String {
-    return this.commit.body.trim();
-  }
-
-  isEmpty(): Boolean {
-    return this instanceof NullMessage;
-  }
-}
-
-class NullMessage extends Message {}
-class CreateJobMessage extends Message {}
-class MarkJobAsDoneMessage extends Message {}
-
-class Commit {
-  hash: string;
-
-  constructor(hash: string) {
-    this.hash = hash;
-  }
-}
-
-function nullCommit() {
-  return {
-    hash: '',
-    date: '',
-    message: '',
-    refs: '',
-    body: '',
-    author_name: '',
-    author_email: ''
-  };
-}
-
-function nullMessage() {
-  return new NullMessage(nullCommit());
-}
+import {Commit} from './commit';
+import {ReadCreateJobMessage, ReadMarkJobAsDoneMessage, ReadMessage, readNullMessage} from './read-message';
 
 export class Queue {
   name: string;
   gitRepoDir: string;
   git: SimpleGit;
-  messages: ReadonlyArray<Message>;
+  messages: ReadonlyArray<ReadMessage>;
 
   readonly CREATE_JOB_SUBJECT_PREFIX = 'CLAIM LOCK: JOB: ';
   readonly MARK_JOB_AS_DONE_SUBJECT_PREFIX = 'RELEASE LOCK: JOB DONE: ';
@@ -98,11 +52,11 @@ export class Queue {
 
   messageFactory(commit: DefaultLogFields) {
     if (this.isCreateJobCommit(commit)) {
-      return new CreateJobMessage(commit);
+      return new ReadCreateJobMessage(commit);
     }
 
     if (this.isMarkJobAsDoneCommit(commit)) {
-      return new MarkJobAsDoneMessage(commit);
+      return new ReadMarkJobAsDoneMessage(commit);
     }
 
     throw new Error(`Invalid queue message in commit: ${commit.hash}`);
@@ -124,21 +78,21 @@ export class Queue {
     return commit.message == this.markJobAsDoneCommitSubject() ? true : false;
   }
 
-  getMessages(): ReadonlyArray<Message> {
+  getMessages(): ReadonlyArray<ReadMessage> {
     return this.messages;
   }
 
-  getLatestMessage(): Message {
-    return this.isEmpty() ? nullMessage() : this.messages[0];
+  getLatestMessage(): ReadMessage {
+    return this.isEmpty() ? readNullMessage() : this.messages[0];
   }
 
   isEmpty(): boolean {
     return this.messages.length == 0;
   }
 
-  getNextJob(): Message {
+  getNextJob(): ReadMessage {
     const latestMessage = this.getLatestMessage();
-    return latestMessage instanceof CreateJobMessage ? latestMessage : nullMessage();
+    return latestMessage instanceof ReadCreateJobMessage ? latestMessage : readNullMessage();
   }
 
   guardThatThereIsNoPendingJobs() {
