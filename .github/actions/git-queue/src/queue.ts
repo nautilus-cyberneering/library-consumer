@@ -149,6 +149,12 @@ export class Queue {
     }
   }
 
+  async gitPush() {
+    if (await this.git.remote([]) != '') {
+      this.git.push();
+    }
+  }
+
   async dispatch(payload: string, gpgSign: boolean): Promise<Commit> {
     this.guardThatThereIsNoPendingJobs();
 
@@ -162,6 +168,8 @@ export class Queue {
     };
 
     const commitResult = await this.git.commit(message, options);
+
+    this.gitPush();
 
     await this.loadMessagesFromGit();
 
@@ -181,6 +189,8 @@ export class Queue {
     };
 
     const commitResult = await this.git.commit(message, options);
+
+    this.gitPush();
 
     await this.loadMessagesFromGit();
 
