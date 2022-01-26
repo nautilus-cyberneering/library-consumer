@@ -16,11 +16,11 @@ class Message {
   }
 
   isEmpty(): Boolean {
-    return this instanceof NoMessage;
+    return this instanceof NullMessage;
   }
 }
 
-class NoMessage extends Message {}
+class NullMessage extends Message {}
 class CreateJobMessage extends Message {}
 class MarkJobAsDoneMessage extends Message {}
 
@@ -32,16 +32,20 @@ class Commit {
   }
 }
 
-function noMessage() {
-  return new NoMessage({
+function nullCommit() {
+  return {
     hash: '',
     date: '',
-    message: 'no-message',
+    message: '',
     refs: '',
     body: '',
     author_name: '',
     author_email: ''
-  });
+  };
+}
+
+function nullMessage() {
+  return new NullMessage(nullCommit());
 }
 
 export class Queue {
@@ -125,7 +129,7 @@ export class Queue {
   }
 
   getLatestMessage(): Message {
-    return this.isEmpty() ? noMessage() : this.messages[0];
+    return this.isEmpty() ? nullMessage() : this.messages[0];
   }
 
   isEmpty(): boolean {
@@ -134,7 +138,7 @@ export class Queue {
 
   getNextJob(): Message {
     const latestMessage = this.getLatestMessage();
-    return latestMessage instanceof CreateJobMessage ? latestMessage : noMessage();
+    return latestMessage instanceof CreateJobMessage ? latestMessage : nullMessage();
   }
 
   guardThatThereIsNoPendingJobs() {
