@@ -1,8 +1,8 @@
 import {DefaultLogFields} from 'simple-git';
 import {nullCommit} from './commit';
 
-const CREATE_JOB_SUBJECT_PREFIX = 'CLAIM LOCK: JOB: ';
-const MARK_JOB_AS_DONE_SUBJECT_PREFIX = 'RELEASE LOCK: JOB DONE: ';
+export const CREATE_JOB_SUBJECT_PREFIX = 'CLAIM LOCK: JOB: ';
+export const MARK_JOB_AS_DONE_SUBJECT_PREFIX = 'RELEASE LOCK: JOB DONE: ';
 
 export class StoredMessage {
   commit: DefaultLogFields;
@@ -50,12 +50,4 @@ export function messageFactoryFromCommit(commit: DefaultLogFields) {
   }
 
   throw new Error(`Invalid queue message in commit: ${commit.hash}`);
-}
-
-export function createJobCommitSubject(queueName: string) {
-  return `${CREATE_JOB_SUBJECT_PREFIX}${queueName}`;
-}
-
-export function markJobAsDoneCommitSubject(queueName: string) {
-  return `${MARK_JOB_AS_DONE_SUBJECT_PREFIX}${queueName}`;
 }
