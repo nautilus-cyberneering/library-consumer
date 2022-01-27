@@ -2,7 +2,7 @@ import * as process from 'process';
 import * as cp from 'child_process';
 import * as path from 'path';
 import {expect, test} from '@jest/globals';
-import {createTmpDir, newSimpleGit} from '../src/__helpers__/helpers';
+import {createTmpDir, dummyPayload, newSimpleGit} from '../src/__helpers__/helpers';
 
 function executeAction(env) {
   const np = process.execPath;
@@ -11,12 +11,6 @@ function executeAction(env) {
     env: env
   };
   return cp.execFileSync(np, [ip], options).toString();
-}
-
-function dummyPayload() {
-  return JSON.stringify({
-    field: 'value'
-  });
 }
 
 async function newInitializedTmpGitDir() {
@@ -60,7 +54,7 @@ describe('GitHub Action', () => {
     const output = executeAction(process.env);
 
     expect(output.includes('::set-output name=job_commit::')).toBe(true);
-    expect(output.includes('::set-output name=job_payload::{"field":"value"}')).toBe(true);
+    expect(output.includes(`::set-output name=job_payload::${dummyPayload()}`)).toBe(true);
   });
 
   it('should mark the pending job as done', async () => {

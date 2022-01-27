@@ -1,7 +1,9 @@
-import {DefaultLogFields, SimpleGit, CheckRepoActions, GitResponseError} from 'simple-git';
+import {DefaultLogFields, SimpleGit, CheckRepoActions, GitResponseError, CleanOptions} from 'simple-git';
 import {Commit} from './commit';
 import {StoredCreateJobMessage, StoredMessage, nullMessage, messageFactoryFromCommit, CREATE_JOB_SUBJECT_PREFIX, MARK_JOB_AS_DONE_SUBJECT_PREFIX} from './stored-message';
 import {CreateJobMessage, MarkJobAsDoneMessage, Message} from './message';
+import {CommitAuthor} from './commit-author';
+import {CommitOptions} from './commit-options';
 
 export class Queue {
   name: string;
@@ -77,15 +79,17 @@ export class Queue {
     }
   }
 
-  async commitAndPush(message: string[], signingKey: string = ''): Promise<Commit> {
-    const commit = await this.commit(message, signingKey);
+  async commitAndPush(message: string[], commitOptions: CommitOptions): Promise<Commit> {
+    const commit = await this.commit(message, commitOptions);
     this.push();
     return commit;
   }
 
-  async commit(message: string[], signingKey: string = ''): Promise<Commit> {
-    const commitResult = await this.git.commit(message, this.commitOptions(signingKey));
+  async commit(message: string[], commitOptions: CommitOptions): Promise<Commit> {
+    const commitResult = await this.git.commit(message, commitOptions.forSimpleGit());
+
     await this.loadMessagesFromGit();
+
     return new Commit(commitResult.commit);
   }
 
@@ -93,16 +97,6 @@ export class Queue {
     if ((await this.git.remote([])) != '') {
       this.git.push();
     }
-  }
-
-  commitOptions(signingKey: string = '') {
-    return {
-      '--allow-empty': null,
-      ...(signingKey == '' && {'--no-gpg-sign': null}),
-      ...(signingKey != '' && {
-        '--gpg-sign': signingKey
-      })
-    };
   }
 
   buildCommitMessage(message: Message): string[] {
@@ -122,23 +116,23 @@ export class Queue {
     return commitMessage;
   }
 
-  async createJob(payload: string, signingKey: string = ''): Promise<Commit> {
+  async createJob(payload: string, commitOptions: CommitOptions): Promise<Commit> {
     this.guardThatThereIsNoPendingJobs();
 
     const message = new CreateJobMessage(payload);
 
-    return this.commitMessage(message, signingKey);
+    return this.commitMessage(message, commitOptions);
   }
 
-  async markJobAsDone(payload: string, signingKey: string = '') {
+  async markJobAsDone(payload: string, commitOptions: CommitOptions) {
     this.guardThatThereIsAPendingJob();
 
     const message = new MarkJobAsDoneMessage(payload);
 
-    return this.commitMessage(message, signingKey);
+    return this.commitMessage(message, commitOptions);
   }
 
-  async commitMessage(message: Message, signingKey: string = ''): Promise<Commit> {
-    return await this.commitAndPush(this.buildCommitMessage(message), signingKey);
+  async commitMessage(message: Message, commitOptions: CommitOptions): Promise<Commit> {
+    return await this.commitAndPush(this.buildCommitMessage(message), commitOptions);
   }
 }
