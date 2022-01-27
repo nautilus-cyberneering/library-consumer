@@ -79,43 +79,6 @@ export class Queue {
     }
   }
 
-  async commitAndPush(message: string[], commitOptions: CommitOptions): Promise<Commit> {
-    const commit = await this.commit(message, commitOptions);
-    this.push();
-    return commit;
-  }
-
-  async commit(message: string[], commitOptions: CommitOptions): Promise<Commit> {
-    const commitResult = await this.git.commit(message, commitOptions.forSimpleGit());
-
-    await this.loadMessagesFromGit();
-
-    return new Commit(commitResult.commit);
-  }
-
-  async push() {
-    if ((await this.git.remote([])) != '') {
-      this.git.push();
-    }
-  }
-
-  buildCommitMessage(message: Message): string[] {
-    let commitSubject: string;
-    if (message instanceof CreateJobMessage) {
-      commitSubject = `${CREATE_JOB_SUBJECT_PREFIX}${this.name}`;
-    } else if (message instanceof MarkJobAsDoneMessage) {
-      commitSubject = `${MARK_JOB_AS_DONE_SUBJECT_PREFIX}${this.name}`;
-    } else {
-      throw Error(`Invalid Message type: ${typeof message}`);
-    }
-
-    const commitBody = message.getPayload();
-
-    const commitMessage = [commitSubject, commitBody];
-
-    return commitMessage;
-  }
-
   async createJob(payload: string, commitOptions: CommitOptions): Promise<Commit> {
     this.guardThatThereIsNoPendingJobs();
 
@@ -133,6 +96,31 @@ export class Queue {
   }
 
   async commitMessage(message: Message, commitOptions: CommitOptions): Promise<Commit> {
-    return await this.commitAndPush(this.buildCommitMessage(message), commitOptions);
+    const commitMessage = this.buildCommitMessage(message);
+    const commitResult = await this.git.commit(commitMessage, commitOptions.forSimpleGit());
+    await this.loadMessagesFromGit();
+    return new Commit(commitResult.commit);
+  }
+
+  buildCommitMessage(message: Message): string[] {
+    const commitSubject = this.buildCommitSubject(message);
+
+    const commitBody = message.getPayload();
+
+    const commitMessage = [commitSubject, commitBody];
+
+    return commitMessage;
+  }
+
+  buildCommitSubject(message: Message): string {
+    let commitSubject: string;
+    if (message instanceof CreateJobMessage) {
+      commitSubject = `${CREATE_JOB_SUBJECT_PREFIX}${this.name}`;
+    } else if (message instanceof MarkJobAsDoneMessage) {
+      commitSubject = `${MARK_JOB_AS_DONE_SUBJECT_PREFIX}${this.name}`;
+    } else {
+      throw Error(`Invalid Message type: ${typeof message}`);
+    }
+    return commitSubject;
   }
 }
