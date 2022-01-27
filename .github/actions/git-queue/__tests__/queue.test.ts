@@ -1,6 +1,19 @@
 import * as cp from 'child_process';
+import {CommitAuthor} from '../src/commit-author';
+import {CommitOptions} from '../src/commit-options';
 import {Queue} from '../src/queue';
-import {createTmpDir, newSimpleGit} from '../src/__helpers__/helpers';
+import {SigningKeyId} from '../src/signing-key-id';
+import {createTmpDir, dummyPayload, newSimpleGit} from '../src/__helpers__/helpers';
+
+function commitOptionsForTests(signCommits: boolean = false) {
+  let signingKeyId = new SigningKeyId('');
+
+  if (signCommits) {
+    signingKeyId = new SigningKeyId('3F39AA1432CA6AD7');
+  }
+
+  return new CommitOptions(new CommitAuthor('A committer', 'committer@example.com'), signingKeyId);
+}
 
 describe('Queue', () => {
   it('should dispatch a new job', async () => {
@@ -11,15 +24,11 @@ describe('Queue', () => {
 
     let queue = await Queue.create('QUEUE NAME', gitRepoDir, git);
 
-    const payload = JSON.stringify({
-      field: 'value'
-    });
-
-    await queue.createJob(payload);
+    await queue.createJob(dummyPayload(), commitOptionsForTests());
 
     const nextJob = queue.getNextJob();
 
-    expect(nextJob.payload()).toBe(payload);
+    expect(nextJob.payload()).toBe(dummyPayload());
   });
 
   it('should mark a job as done', async () => {
@@ -30,13 +39,8 @@ describe('Queue', () => {
 
     let queue = await Queue.create('QUEUE NAME', gitRepoDir, git);
 
-    const payload = JSON.stringify({
-      field: 'value'
-    });
-    const signCommit = false;
-
-    await queue.createJob(payload);
-    await queue.markJobAsDone(payload);
+    await queue.createJob(dummyPayload(), commitOptionsForTests());
+    await queue.markJobAsDone(dummyPayload(), commitOptionsForTests());
 
     const nextJob = queue.getNextJob();
 
@@ -51,16 +55,14 @@ describe('Queue', () => {
 
     let queue = await Queue.create('QUEUE NAME', gitRepoDir, git);
 
-    const payload = JSON.stringify({
-      field: 'value'
-    });
+    await queue.createJob(dummyPayload(), commitOptionsForTests(true));
 
-    const signingKey = '88966A5B8C01BD04F3DA440427304EDD6079B81C';
+    const output = cp
+      .execFileSync('git', ['log', '--show-signature', '-n1'], {
+        cwd: gitRepoDir
+      })
+      .toString();
 
-    await queue.createJob(payload, signingKey);
-
-    const output = cp.execFileSync('git', ['log', '--show-signature', '-n1']).toString();
-
-    expect(output.includes('gpg:                using RSA key 1250353E4F6CEADD74555FA058508C7950C7B7A2')).toBe(true);
+    expect(output.includes('gpg:                using RSA key BD98B3F42545FF93EFF55F7F3F39AA1432CA6AD7')).toBe(true);
   });
 });

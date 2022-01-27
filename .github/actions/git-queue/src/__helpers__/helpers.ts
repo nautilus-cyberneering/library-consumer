@@ -10,3 +10,9 @@ export async function newSimpleGit(baseDir: string): Promise<SimpleGit> {
   const git = simpleGit(baseDir);
   return git;
 }
+
+export function dummyPayload() {
+  return JSON.stringify({
+    field: 'value'
+  });
+}
