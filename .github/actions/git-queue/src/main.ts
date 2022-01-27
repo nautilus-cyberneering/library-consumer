@@ -2,6 +2,9 @@ import * as core from '@actions/core';
 import * as context from './context';
 import {Queue} from './queue';
 import simpleGit, {SimpleGit, CleanOptions} from 'simple-git';
+import {CommitAuthor} from './commit-author';
+import {CommitOptions} from './commit-options';
+import {SigningKeyId} from './signing-key-id';
 
 async function run(): Promise<void> {
   try {
@@ -11,9 +14,15 @@ async function run(): Promise<void> {
 
     let queue = await Queue.create(inputs.queueName, gitRepoDir, git);
 
+    // TODO: use input if provided or git global config
+
+    const commitAuthor = new CommitAuthor('A committer', 'committer@example.com');
+    const signingKeyId = new SigningKeyId('3F39AA1432CA6AD7');
+    const commitOptions = new CommitOptions(commitAuthor, signingKeyId);
+
     switch (inputs.action) {
       case 'create-job':
-        const createJobCommit = await queue.createJob(inputs.jobPayload);
+        const createJobCommit = await queue.createJob(inputs.jobPayload, commitOptions);
 
         await core.group(`Setting outputs`, async () => {
           context.setOutput('job_created', true);
@@ -40,7 +49,7 @@ async function run(): Promise<void> {
         break;
 
       case 'mark-job-as-done':
-        const markJobAsDoneCommit = await queue.markJobAsDone(inputs.jobPayload);
+        const markJobAsDoneCommit = await queue.markJobAsDone(inputs.jobPayload, commitOptions);
 
         await core.group(`Setting outputs`, async () => {
           context.setOutput('job_created', true);
