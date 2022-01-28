@@ -6,7 +6,7 @@
     "build": "tsc && ncc build",
     "format": "prettier --write **/*.ts",
     "format-check": "prettier --check **/*.ts",
-    "test": "jest --coverage",
+    "test": "yarn run build && jest --coverage",
     "pre-checkin": "yarn run format && yarn run build"
   },
   "repository": {

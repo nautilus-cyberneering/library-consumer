@@ -1,10 +1,8 @@
-import * as cp from 'child_process';
 import {CommitAuthor} from '../src/commit-author';
 import {CommitOptions} from '../src/commit-options';
-import {EmailAddress} from '../src/email-address';
 import {Queue} from '../src/queue';
 import {SigningKeyId} from '../src/signing-key-id';
-import {createTmpDir, dummyPayload, newSimpleGit} from '../src/__helpers__/helpers';
+import {createTmpDir, dummyPayload, gitLogForLatestCommit, newSimpleGit} from '../src/__helpers__/helpers';
 
 function commitOptionsForTests(signCommits: boolean = false) {
   let signingKeyId = new SigningKeyId('');
@@ -16,15 +14,6 @@ function commitOptionsForTests(signCommits: boolean = false) {
   const commitAuthor = CommitAuthor.fromNameAndEmail('A committer', 'committer@example.com');
 
   return new CommitOptions(commitAuthor, signingKeyId);
-}
-
-function gitLogForLatestCommit(gitRepoDir: string): string {
-  const output = cp
-    .execFileSync('git', ['log', '--show-signature', '-n1'], {
-      cwd: gitRepoDir
-    })
-    .toString();
-  return output;
 }
 
 describe('Queue', () => {
