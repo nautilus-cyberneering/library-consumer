@@ -2,7 +2,7 @@ import * as process from 'process';
 import * as cp from 'child_process';
 import * as path from 'path';
 import {expect, test} from '@jest/globals';
-import {createTmpDir, dummyPayload, newSimpleGit} from '../src/__helpers__/helpers';
+import {createTmpDir, dummyPayload, gitLogForLatestCommit, newSimpleGit} from '../src/__helpers__/helpers';
 
 function executeAction(env) {
   const np = process.execPath;
@@ -27,13 +27,12 @@ function createJob() {
 }
 
 describe('GitHub Action', () => {
-  let gitRepoDir: String;
+  let gitRepoDir: string;
 
   beforeEach(async () => {
     process.env['INPUT_QUEUE_NAME'] = 'QUEUE-NAME';
     process.env['INPUT_GIT_REPO_DIR'] = await newInitializedTmpGitDir();
     gitRepoDir = process.env['INPUT_GIT_REPO_DIR'];
-    // console.log(`New git tmp dir ${gitRepoDir}`);
   });
 
   it('should create a new job', async () => {
@@ -66,5 +65,29 @@ describe('GitHub Action', () => {
 
     expect(output.includes('::set-output name=job_created::true')).toBe(true);
     expect(output.includes('::set-output name=job_commit::')).toBe(true);
+  });
+
+  it('should allow to overwrite commit author', async () => {
+    process.env['INPUT_ACTION'] = 'create-job';
+    process.env['INPUT_JOB_PAYLOAD'] = dummyPayload();
+    process.env['INPUT_GIT_COMMIT_AUTHOR'] = 'A committer <committer@example.com>';
+
+    executeAction(process.env);
+
+    const gitLogOutput = gitLogForLatestCommit(gitRepoDir);
+
+    expect(gitLogOutput.includes('Author: A committer <committer@example.com>')).toBe(true);
+  });
+
+  it('should allow to overwrite commit signing key', async () => {
+    process.env['INPUT_ACTION'] = 'create-job';
+    process.env['INPUT_JOB_PAYLOAD'] = dummyPayload();
+    process.env['INPUT_GIT_COMMIT_SIGNING_KEY'] = '3F39AA1432CA6AD7';
+
+    executeAction(process.env);
+
+    const gitLogOutput = gitLogForLatestCommit(gitRepoDir);
+
+    expect(gitLogOutput.includes('gpg:                using RSA key BD98B3F42545FF93EFF55F7F3F39AA1432CA6AD7')).toBe(true);
   });
 });
