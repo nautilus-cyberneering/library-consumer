@@ -1,8 +1,10 @@
+import {Email} from './email';
+
 export class CommitAuthor {
   name: string;
-  email: string;
+  email: Email;
 
-  constructor(name: string, email: string) {
+  constructor(name: string, email: Email) {
     this.name = name;
     this.email = email;
   }
