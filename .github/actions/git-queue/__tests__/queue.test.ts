@@ -1,6 +1,7 @@
 import * as cp from 'child_process';
 import {CommitAuthor} from '../src/commit-author';
 import {CommitOptions} from '../src/commit-options';
+import {Email} from '../src/email';
 import {Queue} from '../src/queue';
 import {SigningKeyId} from '../src/signing-key-id';
 import {createTmpDir, dummyPayload, newSimpleGit} from '../src/__helpers__/helpers';
@@ -12,7 +13,7 @@ function commitOptionsForTests(signCommits: boolean = false) {
     signingKeyId = new SigningKeyId('3F39AA1432CA6AD7');
   }
 
-  return new CommitOptions(new CommitAuthor('A committer', 'committer@example.com'), signingKeyId);
+  return new CommitOptions(new CommitAuthor('A committer', new Email('committer@example.com')), signingKeyId);
 }
 
 describe('Queue', () => {
