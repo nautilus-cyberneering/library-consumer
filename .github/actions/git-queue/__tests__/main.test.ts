@@ -2,7 +2,7 @@ import * as process from 'process';
 import * as cp from 'child_process';
 import * as path from 'path';
 import {expect, test} from '@jest/globals';
-import {createTmpDir, dummyPayload, gitLogForLatestCommit, newSimpleGit} from '../src/__tests__/helpers';
+import {dummyPayload, gitLogForLatestCommit, createInitializedTempGitDir} from '../src/__tests__/helpers';
 
 function executeAction(env) {
   const np = process.execPath;
@@ -11,13 +11,6 @@ function executeAction(env) {
     env: env
   };
   return cp.execFileSync(np, [ip], options).toString();
-}
-
-async function newInitializedTmpGitDir() {
-  const gitRepoDir = await createTmpDir();
-  const git = await newSimpleGit(gitRepoDir);
-  await git.init();
-  return gitRepoDir;
 }
 
 function createJob() {
@@ -31,7 +24,7 @@ describe('GitHub Action', () => {
 
   beforeEach(async () => {
     process.env['INPUT_QUEUE_NAME'] = 'QUEUE-NAME';
-    process.env['INPUT_GIT_REPO_DIR'] = await newInitializedTmpGitDir();
+    process.env['INPUT_GIT_REPO_DIR'] = await createInitializedTempGitDir();
     gitRepoDir = process.env['INPUT_GIT_REPO_DIR'];
   });
 
