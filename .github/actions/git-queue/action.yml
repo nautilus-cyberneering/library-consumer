@@ -5,7 +5,7 @@ branding:
   icon: 'lock'
 inputs:
   queue_name:
-    description: 'Queue name. It can't contain special characters or white spaces'
+    description: 'Queue name. It can not contain special characters or white spaces'
     required: true
   action:
     description: 'The action you want to perform'
