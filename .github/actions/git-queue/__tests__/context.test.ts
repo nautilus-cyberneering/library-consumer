@@ -1,6 +1,6 @@
 import * as os from 'os';
 import * as context from '../src/context';
-import {dummyPayload} from '../src/__helpers__/helpers';
+import {dummyPayload} from '../src/__tests__/helpers';
 
 describe('setOutput', () => {
   beforeEach(() => {
