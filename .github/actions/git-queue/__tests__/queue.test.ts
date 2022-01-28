@@ -2,7 +2,7 @@ import {CommitAuthor} from '../src/commit-author';
 import {CommitOptions} from '../src/commit-options';
 import {Queue} from '../src/queue';
 import {SigningKeyId} from '../src/signing-key-id';
-import {createTmpDir, dummyPayload, gitLogForLatestCommit, newSimpleGit} from '../src/__helpers__/helpers';
+import {createTmpDir, dummyPayload, gitLogForLatestCommit, newSimpleGit} from '../src/__tests__/helpers';
 
 function commitOptionsForTests(signCommits: boolean = false) {
   let signingKeyId = new SigningKeyId('');
