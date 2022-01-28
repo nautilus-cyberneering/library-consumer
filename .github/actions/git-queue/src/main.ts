@@ -4,7 +4,17 @@ import {Queue} from './queue';
 import simpleGit, {SimpleGit, CleanOptions} from 'simple-git';
 import {CommitAuthor, emptyCommitAuthor} from './commit-author';
 import {CommitOptions} from './commit-options';
-import {SigningKeyId} from './signing-key-id';
+import {emptySigningKeyId, SigningKeyId} from './signing-key-id';
+import {Inputs} from './context';
+
+const ACTION_CREATE_JOB = 'create-job';
+const ACTION_NEXT_JOB = 'next-job';
+const ACTION_MARK_JOB_AS_DONE = 'mark-job-as-done';
+
+function actionOptions(): string {
+  const options = [ACTION_CREATE_JOB, ACTION_NEXT_JOB, ACTION_MARK_JOB_AS_DONE];
+  return options.toString();
+}
 
 async function getCommitAuthor(commitAuthor: string, git: SimpleGit): Promise<CommitAuthor> {
   if (commitAuthor) {
@@ -21,6 +31,20 @@ async function getCommitAuthor(commitAuthor: string, git: SimpleGit): Promise<Co
   return emptyCommitAuthor();
 }
 
+async function getSigningKeyId(signingKeyId: string, git: SimpleGit): Promise<SigningKeyId> {
+  if (signingKeyId) {
+    return new SigningKeyId(signingKeyId);
+  }
+
+  const signingkey = await getGitConfig('user.signingkey', git);
+
+  if (signingkey) {
+    return new SigningKeyId(signingKeyId);
+  }
+
+  return emptySigningKeyId();
+}
+
 async function getGitConfig(key: string, git: SimpleGit): Promise<string | null> {
   const localOption = await git.getConfig(key, 'local');
   if (localOption.value) return localOption.value;
@@ -34,6 +58,13 @@ async function getGitConfig(key: string, git: SimpleGit): Promise<string | null>
   return null;
 }
 
+async function getCommitOptions(inputs: Inputs, git: SimpleGit): Promise<CommitOptions> {
+  const commitAuthor = await getCommitAuthor(inputs.gitCommitAuthor, git);
+  const commitSigningKeyId = await getSigningKeyId(inputs.gitCommitSigningKey, git);
+  const commitOptions = new CommitOptions(commitAuthor, commitSigningKeyId);
+  return commitOptions;
+}
+
 async function run(): Promise<void> {
   try {
     let inputs: context.Inputs = await context.getInputs();
@@ -42,14 +73,10 @@ async function run(): Promise<void> {
 
     let queue = await Queue.create(inputs.queueName, gitRepoDir, git);
 
-    const commitAuthor = await getCommitAuthor(inputs.gitCommitAuthor, git);
-
-    const signingKeyId = new SigningKeyId('3F39AA1432CA6AD7');
-
-    const commitOptions = new CommitOptions(commitAuthor, signingKeyId);
+    const commitOptions = await getCommitOptions(inputs, git);
 
     switch (inputs.action) {
-      case 'create-job':
+      case ACTION_CREATE_JOB:
         const createJobCommit = await queue.createJob(inputs.jobPayload, commitOptions);
 
         await core.group(`Setting outputs`, async () => {
@@ -61,7 +88,8 @@ async function run(): Promise<void> {
         });
 
         break;
-      case 'next-job':
+
+      case ACTION_NEXT_JOB:
         const nextJob = queue.getNextJob();
 
         if (!nextJob.isEmpty()) {
@@ -76,7 +104,7 @@ async function run(): Promise<void> {
 
         break;
 
-      case 'mark-job-as-done':
+      case ACTION_MARK_JOB_AS_DONE:
         const markJobAsDoneCommit = await queue.markJobAsDone(inputs.jobPayload, commitOptions);
 
         await core.group(`Setting outputs`, async () => {
@@ -89,7 +117,7 @@ async function run(): Promise<void> {
 
         break;
       default:
-        core.error('Invalid action');
+        core.error(`Invalid action. Actions can only be: ${actionOptions}`);
     }
   } catch (error: any) {
     core.setFailed(error.message);

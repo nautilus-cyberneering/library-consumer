@@ -13,3 +13,7 @@ export class SigningKeyId {
     return this.id == '';
   }
 }
+
+export function emptySigningKeyId() {
+  return new SigningKeyId('');
+}
