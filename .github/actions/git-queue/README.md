@@ -142,3 +142,7 @@ act -w ./.github/workflows/test-git-job-action.yml -j build
 ## License
 
 MIT. See `LICENSE` for more details.
+
+## Credits
+
+The [gpg.ts](src/__tests__/gpg.ts) and [openpgp.ts](src/__tests__/openpgp.ts) files were copied from this [GitHub Action repository](https://github.com/crazy-max/ghaction-import-gpg).

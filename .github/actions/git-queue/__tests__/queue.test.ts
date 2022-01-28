@@ -2,26 +2,24 @@ import {CommitAuthor} from '../src/commit-author';
 import {CommitOptions} from '../src/commit-options';
 import {Queue} from '../src/queue';
 import {SigningKeyId} from '../src/signing-key-id';
-import {createTmpDir, dummyPayload, gitLogForLatestCommit, newSimpleGit} from '../src/__tests__/helpers';
+import {createTempEmptyDir, createTempGnuPGHomeDir, dummyPayload, gitLogForLatestCommit, newSimpleGit} from '../src/__tests__/helpers';
 
-function commitOptionsForTests(signCommits: boolean = false) {
-  let signingKeyId = new SigningKeyId('');
-
-  if (signCommits) {
-    signingKeyId = new SigningKeyId('3F39AA1432CA6AD7');
-  }
-
+function commitOptionsForTests() {
   const commitAuthor = CommitAuthor.fromNameAndEmail('A committer', 'committer@example.com');
+  const signingKeyId = new SigningKeyId('');
+  return new CommitOptions(commitAuthor, signingKeyId);
+}
 
+function commitOptionsForTestsUsingSignature() {
+  const signingKeyId = new SigningKeyId('3F39AA1432CA6AD7');
+  const commitAuthor = CommitAuthor.fromNameAndEmail('A committer', 'committer@example.com');
   return new CommitOptions(commitAuthor, signingKeyId);
 }
 
 describe('Queue', () => {
   it('should dispatch a new job', async () => {
-    const gitRepoDir = await createTmpDir();
-    const git = await newSimpleGit(gitRepoDir);
-
-    await git.init();
+    const gitRepoDir = await createTempEmptyDir();
+    const git = await newSimpleGit(gitRepoDir, true);
 
     let queue = await Queue.create('QUEUE NAME', gitRepoDir, git);
 
@@ -33,10 +31,8 @@ describe('Queue', () => {
   });
 
   it('should mark a job as done', async () => {
-    const gitRepoDir = await createTmpDir();
-    const git = await newSimpleGit(gitRepoDir);
-
-    await git.init();
+    const gitRepoDir = await createTempEmptyDir();
+    const git = await newSimpleGit(gitRepoDir, true);
 
     let queue = await Queue.create('QUEUE NAME', gitRepoDir, git);
 
@@ -48,15 +44,13 @@ describe('Queue', () => {
     expect(nextJob.isEmpty()).toBe(true);
   });
 
-  it('should allow to esterify the commit author', async () => {
-    const gitRepoDir = await createTmpDir();
-    const git = await newSimpleGit(gitRepoDir);
-
-    await git.init();
+  it('should allow to specify the commit author', async () => {
+    const gitRepoDir = await createTempEmptyDir();
+    const git = await newSimpleGit(gitRepoDir, true);
 
     let queue = await Queue.create('QUEUE NAME', gitRepoDir, git);
 
-    await queue.createJob(dummyPayload(), commitOptionsForTests(true));
+    await queue.createJob(dummyPayload(), commitOptionsForTests());
 
     const output = gitLogForLatestCommit(gitRepoDir);
 
@@ -64,14 +58,20 @@ describe('Queue', () => {
   });
 
   it('should allow to sign commits', async () => {
-    const gitRepoDir = await createTmpDir();
-    const git = await newSimpleGit(gitRepoDir);
+    const gitRepoDir = await createTempEmptyDir();
+    const gnuPGHomeDir = await createTempGnuPGHomeDir();
 
-    await git.init();
+    const git = await newSimpleGit(gitRepoDir, true);
+
+    git.addConfig('user.name', 'A committer');
+    git.addConfig('user.email', 'committer@example.com');
+    git.env('GNUPGHOME', gnuPGHomeDir);
+
+    console.log(gnuPGHomeDir);
 
     let queue = await Queue.create('QUEUE NAME', gitRepoDir, git);
 
-    await queue.createJob(dummyPayload(), commitOptionsForTests(true));
+    await queue.createJob(dummyPayload(), commitOptionsForTestsUsingSignature());
 
     const output = gitLogForLatestCommit(gitRepoDir);
 
