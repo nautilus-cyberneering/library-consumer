@@ -13,7 +13,7 @@ export class CommitOptions {
   forSimpleGit() {
     return {
       '--allow-empty': null,
-      '--author': `"${this.commitAuthor.toString()}"`,
+      ...(!this.commitAuthor.isEmpty() && {'--author': `"${this.commitAuthor.toString()}"`}),
       ...(this.signingKeyId.isEmpty() && {'--no-gpg-sign': null}),
       ...(!this.signingKeyId.isEmpty() && {
         '--gpg-sign': this.signingKeyId.toString()
