@@ -6,6 +6,8 @@ export interface Inputs {
   action: string;
   jobPayload: string;
   gitRepoDir: string;
+  gitCommitAuthor: string;
+  gitCommitSigningKey: string;
 }
 
 export async function getInputs(): Promise<Inputs> {
@@ -13,7 +15,9 @@ export async function getInputs(): Promise<Inputs> {
     queueName: core.getInput('queue_name', {required: true}),
     action: core.getInput('action', {required: true}),
     jobPayload: core.getInput('job_payload', {required: false}),
-    gitRepoDir: core.getInput('git_repo_dir', {required: false})
+    gitRepoDir: core.getInput('git_repo_dir', {required: false}),
+    gitCommitAuthor: core.getInput('git_commit_author', {required: false}),
+    gitCommitSigningKey: core.getInput('git_commit_signing_key', {required: false})
   };
 }
 
