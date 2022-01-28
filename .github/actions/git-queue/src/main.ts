@@ -5,6 +5,7 @@ import simpleGit, {SimpleGit, CleanOptions} from 'simple-git';
 import {CommitAuthor} from './commit-author';
 import {CommitOptions} from './commit-options';
 import {SigningKeyId} from './signing-key-id';
+import {Email} from './email';
 
 async function run(): Promise<void> {
   try {
@@ -16,7 +17,7 @@ async function run(): Promise<void> {
 
     // TODO: use input if provided or git global config
 
-    const commitAuthor = new CommitAuthor('A committer', 'committer@example.com');
+    const commitAuthor = new CommitAuthor('A committer', new Email('committer@example.com'));
     const signingKeyId = new SigningKeyId('3F39AA1432CA6AD7');
     const commitOptions = new CommitOptions(commitAuthor, signingKeyId);
 
