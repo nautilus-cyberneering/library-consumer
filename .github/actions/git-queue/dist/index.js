@@ -2,6 +2,100 @@ module.exports =
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 606:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.emptyCommitAuthor = exports.CommitAuthor = void 0;
+const email_address_1 = __webpack_require__(732);
+const NO_AUTHOR_NAME = '--no-author--';
+const NO_AUTHOR_EMAIL = 'no-author@no-author.com';
+class CommitAuthor {
+    constructor(emailAddress) {
+        this.emailAddress = emailAddress;
+    }
+    static fromEmailAddressString(emailAddress) {
+        return new CommitAuthor(new email_address_1.EmailAddress(emailAddress));
+    }
+    static fromNameAndEmail(name, email) {
+        return new CommitAuthor(email_address_1.EmailAddress.fromDisplayNameAndEmail(name, email));
+    }
+    getName() {
+        return this.emailAddress.getDisplayName();
+    }
+    getEmail() {
+        return this.emailAddress.getEmail();
+    }
+    toString() {
+        return this.emailAddress.toString();
+    }
+    isEmpty() {
+        return this.getName() == NO_AUTHOR_NAME && this.getEmail() == NO_AUTHOR_EMAIL;
+    }
+}
+exports.CommitAuthor = CommitAuthor;
+function emptyCommitAuthor() {
+    return CommitAuthor.fromNameAndEmail(NO_AUTHOR_NAME, NO_AUTHOR_EMAIL);
+}
+exports.emptyCommitAuthor = emptyCommitAuthor;
+//# sourceMappingURL=commit-author.js.map
+
+/***/ }),
+
+/***/ 360:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.CommitOptions = void 0;
+class CommitOptions {
+    constructor(commitAuthor, signingKeyId) {
+        this.commitAuthor = commitAuthor;
+        this.signingKeyId = signingKeyId;
+    }
+    forSimpleGit() {
+        return Object.assign(Object.assign(Object.assign({ '--allow-empty': null }, (!this.commitAuthor.isEmpty() && { '--author': `"${this.commitAuthor.toString()}"` })), (this.signingKeyId.isEmpty() && { '--no-gpg-sign': null })), (!this.signingKeyId.isEmpty() && {
+            '--gpg-sign': this.signingKeyId.toString()
+        }));
+    }
+}
+exports.CommitOptions = CommitOptions;
+//# sourceMappingURL=commit-options.js.map
+
+/***/ }),
+
+/***/ 873:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.nullCommit = exports.Commit = void 0;
+class Commit {
+    constructor(hash) {
+        this.hash = hash;
+    }
+}
+exports.Commit = Commit;
+function nullCommit() {
+    return {
+        hash: '',
+        date: '',
+        message: '',
+        refs: '',
+        body: '',
+        author_name: '',
+        author_email: ''
+    };
+}
+exports.nullCommit = nullCommit;
+//# sourceMappingURL=commit.js.map
+
+/***/ }),
+
 /***/ 842:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -45,7 +139,9 @@ function getInputs() {
             queueName: core.getInput('queue_name', { required: true }),
             action: core.getInput('action', { required: true }),
             jobPayload: core.getInput('job_payload', { required: false }),
-            gitRepoDir: core.getInput('git_repo_dir', { required: false })
+            gitRepoDir: core.getInput('git_repo_dir', { required: false }),
+            gitCommitAuthor: core.getInput('git_commit_author', { required: false }),
+            gitCommitSigningKey: core.getInput('git_commit_signing_key', { required: false })
         };
     });
 }
@@ -56,6 +152,83 @@ function setOutput(name, value) {
 }
 exports.setOutput = setOutput;
 //# sourceMappingURL=context.js.map
+
+/***/ }),
+
+/***/ 732:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.EmailAddress = void 0;
+/*
+ * Wrapper for RFC5322 email address.
+ *
+ * For example:
+ *
+ * A Committer <committer@example.com>
+ * John Smith <john.smith@example.org>
+ * committer@example.com
+ *
+ * For this app we only allow this formats:
+ *
+ * [NAME] <EMAIL>
+ * EMAIL
+ *
+ * NAME is optional.
+ */
+class EmailAddress {
+    constructor(emailAddress) {
+        this.displayName = this.extractDisplayName(emailAddress);
+        this.email = this.extractEmail(emailAddress);
+        if (!this.isValid(this.email)) {
+            throw Error(`Invalid email: ${this.email}`);
+        }
+    }
+    static fromDisplayNameAndEmail(displayName, email) {
+        return new EmailAddress(`${displayName} <${email}>`);
+    }
+    getDisplayName() {
+        return this.displayName;
+    }
+    getEmail() {
+        return this.email;
+    }
+    toString() {
+        if (this.displayName == '') {
+            return this.email;
+        }
+        return `${this.displayName} <${this.email}>`;
+    }
+    extractDisplayName(emailAddress) {
+        if (!this.containsDisplayName(emailAddress)) {
+            return '';
+        }
+        const beginEmail = emailAddress.indexOf('<');
+        const name = emailAddress.substring(0, beginEmail - 1);
+        return name;
+    }
+    extractEmail(emailAddress) {
+        if (!this.containsDisplayName(emailAddress)) {
+            return emailAddress;
+        }
+        const firstChar = emailAddress.indexOf('<');
+        const lastChar = emailAddress.indexOf('>');
+        const email = emailAddress.substring(firstChar + 1, lastChar);
+        return email;
+    }
+    isValid(email) {
+        return /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()\.,;\s@\"]+\.{0,1})+([^<>()\.,;:\s@\"]{2,}|[\d\.]+))$/.test(email);
+    }
+    containsDisplayName(emailAddress) {
+        const firstChar = emailAddress.indexOf('<');
+        const lastChar = emailAddress.indexOf('>');
+        return firstChar != -1 && lastChar != -1;
+    }
+}
+exports.EmailAddress = EmailAddress;
+//# sourceMappingURL=email-address.js.map
 
 /***/ }),
 
@@ -100,42 +273,103 @@ const core = __importStar(__webpack_require__(186));
 const context = __importStar(__webpack_require__(842));
 const queue_1 = __webpack_require__(65);
 const simple_git_1 = __importDefault(__webpack_require__(959));
+const commit_author_1 = __webpack_require__(606);
+const commit_options_1 = __webpack_require__(360);
+const signing_key_id_1 = __webpack_require__(869);
+const ACTION_CREATE_JOB = 'create-job';
+const ACTION_NEXT_JOB = 'next-job';
+const ACTION_MARK_JOB_AS_DONE = 'mark-job-as-done';
+function actionOptions() {
+    const options = [ACTION_CREATE_JOB, ACTION_NEXT_JOB, ACTION_MARK_JOB_AS_DONE];
+    return options.toString();
+}
+function getCommitAuthor(commitAuthor, git) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (commitAuthor) {
+            return commit_author_1.CommitAuthor.fromEmailAddressString(commitAuthor);
+        }
+        const userName = yield getGitConfig('user.name', git);
+        const userEmail = yield getGitConfig('user.email', git);
+        if (userName && userEmail) {
+            return commit_author_1.CommitAuthor.fromNameAndEmail(userName, userEmail);
+        }
+        return (0, commit_author_1.emptyCommitAuthor)();
+    });
+}
+function getSigningKeyId(signingKeyId, git) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (signingKeyId) {
+            return new signing_key_id_1.SigningKeyId(signingKeyId);
+        }
+        const signingkey = yield getGitConfig('user.signingkey', git);
+        if (signingkey) {
+            return new signing_key_id_1.SigningKeyId(signingKeyId);
+        }
+        return (0, signing_key_id_1.emptySigningKeyId)();
+    });
+}
+function getGitConfig(key, git) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const localOption = yield git.getConfig(key, 'local');
+        if (localOption.value)
+            return localOption.value;
+        const globalOption = yield git.getConfig(key, 'global');
+        if (globalOption.value)
+            return globalOption.value;
+        const systemOption = yield git.getConfig(key, 'system');
+        if (systemOption.value)
+            return systemOption.value;
+        return null;
+    });
+}
+function getCommitOptions(inputs, git) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const commitAuthor = yield getCommitAuthor(inputs.gitCommitAuthor, git);
+        const commitSigningKeyId = yield getSigningKeyId(inputs.gitCommitSigningKey, git);
+        const commitOptions = new commit_options_1.CommitOptions(commitAuthor, commitSigningKeyId);
+        return commitOptions;
+    });
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             let inputs = yield context.getInputs();
             const gitRepoDir = inputs.gitRepoDir ? inputs.gitRepoDir : process.cwd();
             const git = (0, simple_git_1.default)(gitRepoDir);
-            yield core.group(`Debug`, () => __awaiter(this, void 0, void 0, function* () {
-                core.info(`Git repository directory: ${gitRepoDir}`);
-            }));
             let queue = yield queue_1.Queue.create(inputs.queueName, gitRepoDir, git);
+            const commitOptions = yield getCommitOptions(inputs, git);
             switch (inputs.action) {
-                case 'create-job':
-                    const createJobCommit = yield queue.dispatch(inputs.jobPayload, false);
+                case ACTION_CREATE_JOB:
+                    const createJobCommit = yield queue.createJob(inputs.jobPayload, commitOptions);
                     yield core.group(`Setting outputs`, () => __awaiter(this, void 0, void 0, function* () {
                         context.setOutput('job_created', true);
                         context.setOutput('job_commit', createJobCommit.hash);
+                        core.info(`job_created: true`);
+                        core.info(`job_commit: ${createJobCommit.hash}`);
                     }));
                     break;
-                case 'next-job':
+                case ACTION_NEXT_JOB:
                     const nextJob = queue.getNextJob();
                     if (!nextJob.isEmpty()) {
                         yield core.group(`Setting outputs`, () => __awaiter(this, void 0, void 0, function* () {
-                            context.setOutput('job_commit', nextJob.commit_hash());
+                            context.setOutput('job_commit', nextJob.commitHash());
                             context.setOutput('job_payload', nextJob.payload());
+                            core.info(`job_commit: ${nextJob.commitHash()}`);
+                            core.info(`job_payload: ${nextJob.payload()}`);
                         }));
                     }
                     break;
-                case 'mark-job-as-done':
-                    const markJobAsDoneCommit = yield queue.markJobAsDone(inputs.jobPayload, false);
+                case ACTION_MARK_JOB_AS_DONE:
+                    const markJobAsDoneCommit = yield queue.markJobAsDone(inputs.jobPayload, commitOptions);
                     yield core.group(`Setting outputs`, () => __awaiter(this, void 0, void 0, function* () {
                         context.setOutput('job_created', true);
                         context.setOutput('job_commit', markJobAsDoneCommit.hash);
+                        core.info(`job_created: true`);
+                        core.info(`job_commit: ${markJobAsDoneCommit.hash}`);
                     }));
                     break;
                 default:
-                    core.error('Invalid action');
+                    core.error(`Invalid action. Actions can only be: ${actionOptions}`);
             }
         }
         catch (error) {
@@ -148,8 +382,34 @@ run();
 
 /***/ }),
 
+/***/ 307:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.MarkJobAsDoneMessage = exports.CreateJobMessage = exports.Message = void 0;
+class Message {
+    constructor(payload) {
+        this.payload = payload;
+    }
+    getPayload() {
+        return this.payload;
+    }
+}
+exports.Message = Message;
+class CreateJobMessage extends Message {
+}
+exports.CreateJobMessage = CreateJobMessage;
+class MarkJobAsDoneMessage extends Message {
+}
+exports.MarkJobAsDoneMessage = MarkJobAsDoneMessage;
+//# sourceMappingURL=message.js.map
+
+/***/ }),
+
 /***/ 65:
-/***/ (function(__unused_webpack_module, exports) {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
 
@@ -164,50 +424,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Queue = void 0;
-class Message {
-    constructor(commit) {
-        this.commit = commit;
-    }
-    commit_hash() {
-        return this.commit.hash;
-    }
-    payload() {
-        return this.commit.body.trim();
-    }
-    isEmpty() {
-        return this instanceof NoMessage;
-    }
-}
-class NoMessage extends Message {
-}
-class CreateJobMessage extends Message {
-}
-class MarkJobAsDoneMessage extends Message {
-}
-class Commit {
-    constructor(hash) {
-        this.hash = hash;
-    }
-}
-function noMessage() {
-    return new NoMessage({
-        hash: '',
-        date: '',
-        message: 'no-message',
-        refs: '',
-        body: '',
-        author_name: '',
-        author_email: ''
-    });
-}
+const commit_1 = __webpack_require__(873);
+const stored_message_1 = __webpack_require__(683);
+const message_1 = __webpack_require__(307);
 class Queue {
     constructor(name, gitRepoDir, git) {
-        this.CREATE_JOB_SUBJECT_PREFIX = 'CLAIM LOCK: JOB: ';
-        this.MARK_JOB_AS_DONE_SUBJECT_PREFIX = 'RELEASE LOCK: JOB DONE: ';
         this.name = name;
         this.gitRepoDir = gitRepoDir;
         this.git = git;
-        this.messages = [];
+        this.storedMessages = [];
     }
     static create(name, gitRepoDir, git) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -227,7 +452,7 @@ class Queue {
             try {
                 const gitLog = yield this.git.log();
                 const commits = gitLog.all.filter(commit => this.commitBelongsToQueue(commit));
-                this.messages = commits.map(commit => this.messageFactory(commit));
+                this.storedMessages = commits.map(commit => (0, stored_message_1.messageFactoryFromCommit)(commit));
             }
             catch (err) {
                 if (err.message.includes(`fatal: your current branch '${currentBranch}' does not have any commits yet`)) {
@@ -240,45 +465,24 @@ class Queue {
         });
     }
     commitBelongsToQueue(commit) {
-        return this.isCreateJobCommit(commit) || this.isMarkJobAsDoneCommit(commit) ? true : false;
-    }
-    messageFactory(commit) {
-        if (this.isCreateJobCommit(commit)) {
-            return new CreateJobMessage(commit);
-        }
-        if (this.isMarkJobAsDoneCommit(commit)) {
-            return new MarkJobAsDoneMessage(commit);
-        }
-        throw new Error(`Invalid queue message in commit: ${commit.hash}`);
-    }
-    createJobCommitSubject() {
-        return `${this.CREATE_JOB_SUBJECT_PREFIX}${this.name}`;
-    }
-    markJobAsDoneCommitSubject() {
-        return `${this.MARK_JOB_AS_DONE_SUBJECT_PREFIX}${this.name}`;
-    }
-    isCreateJobCommit(commit) {
-        return commit.message == this.createJobCommitSubject() ? true : false;
-    }
-    isMarkJobAsDoneCommit(commit) {
-        return commit.message == this.markJobAsDoneCommitSubject() ? true : false;
+        return commit.message.endsWith(this.name) ? true : false;
     }
     getMessages() {
-        return this.messages;
+        return this.storedMessages;
     }
     getLatestMessage() {
-        return this.isEmpty() ? noMessage() : this.messages[0];
+        return this.isEmpty() ? (0, stored_message_1.nullMessage)() : this.storedMessages[0];
     }
     isEmpty() {
-        return this.messages.length == 0;
+        return this.storedMessages.length == 0;
     }
     getNextJob() {
         const latestMessage = this.getLatestMessage();
-        return latestMessage instanceof CreateJobMessage ? latestMessage : noMessage();
+        return latestMessage instanceof stored_message_1.StoredCreateJobMessage ? latestMessage : (0, stored_message_1.nullMessage)();
     }
     guardThatThereIsNoPendingJobs() {
         if (!this.getNextJob().isEmpty()) {
-            throw new Error(`Can't create a new job. There is already a pending job in commit: ${this.getNextJob().commit_hash}`);
+            throw new Error(`Can't create a new job. There is already a pending job in commit: ${this.getNextJob().commitHash()}`);
         }
     }
     guardThatThereIsAPendingJob() {
@@ -286,31 +490,130 @@ class Queue {
             throw new Error(`Can't mark job as done. There isn't any pending job`);
         }
     }
-    dispatch(payload, gpgSign) {
+    createJob(payload, commitOptions) {
         return __awaiter(this, void 0, void 0, function* () {
             this.guardThatThereIsNoPendingJobs();
-            const message = [`${this.createJobCommitSubject()}`, `${payload}`];
-            // TODO: signed commits
-            const options = Object.assign({ '--allow-empty': null }, (!gpgSign && { '--no-gpg-sign': null }));
-            const commitResult = yield this.git.commit(message, options);
-            yield this.loadMessagesFromGit();
-            return new Commit(commitResult.commit);
+            const message = new message_1.CreateJobMessage(payload);
+            return this.commitMessage(message, commitOptions);
         });
     }
-    markJobAsDone(payload, gpgSign) {
+    markJobAsDone(payload, commitOptions) {
         return __awaiter(this, void 0, void 0, function* () {
             this.guardThatThereIsAPendingJob();
-            const message = [`${this.markJobAsDoneCommitSubject()}`, `${payload}`];
-            // TODO: signed commits
-            const options = Object.assign({ '--allow-empty': null }, (!gpgSign && { '--no-gpg-sign': null }));
-            const commitResult = yield this.git.commit(message, options);
-            yield this.loadMessagesFromGit();
-            return new Commit(commitResult.commit);
+            const message = new message_1.MarkJobAsDoneMessage(payload);
+            return this.commitMessage(message, commitOptions);
         });
+    }
+    commitMessage(message, commitOptions) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const commitMessage = this.buildCommitMessage(message);
+            const commitResult = yield this.git.commit(commitMessage, commitOptions.forSimpleGit());
+            yield this.loadMessagesFromGit();
+            return new commit_1.Commit(commitResult.commit);
+        });
+    }
+    buildCommitMessage(message) {
+        const commitSubject = this.buildCommitSubject(message);
+        const commitBody = message.getPayload();
+        const commitMessage = [commitSubject, commitBody];
+        return commitMessage;
+    }
+    buildCommitSubject(message) {
+        let commitSubject;
+        if (message instanceof message_1.CreateJobMessage) {
+            commitSubject = `${stored_message_1.CREATE_JOB_SUBJECT_PREFIX}${this.name}`;
+        }
+        else if (message instanceof message_1.MarkJobAsDoneMessage) {
+            commitSubject = `${stored_message_1.MARK_JOB_AS_DONE_SUBJECT_PREFIX}${this.name}`;
+        }
+        else {
+            throw Error(`Invalid Message type: ${typeof message}`);
+        }
+        return commitSubject;
     }
 }
 exports.Queue = Queue;
 //# sourceMappingURL=queue.js.map
+
+/***/ }),
+
+/***/ 869:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.emptySigningKeyId = exports.SigningKeyId = void 0;
+class SigningKeyId {
+    constructor(id) {
+        this.id = id;
+    }
+    toString() {
+        return this.id;
+    }
+    isEmpty() {
+        return this.id == '';
+    }
+}
+exports.SigningKeyId = SigningKeyId;
+function emptySigningKeyId() {
+    return new SigningKeyId('');
+}
+exports.emptySigningKeyId = emptySigningKeyId;
+//# sourceMappingURL=signing-key-id.js.map
+
+/***/ }),
+
+/***/ 683:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.messageFactoryFromCommit = exports.nullMessage = exports.StoredMarkJobAsDoneMessage = exports.StoredCreateJobMessage = exports.NullMessage = exports.StoredMessage = exports.MARK_JOB_AS_DONE_SUBJECT_PREFIX = exports.CREATE_JOB_SUBJECT_PREFIX = void 0;
+const commit_1 = __webpack_require__(873);
+exports.CREATE_JOB_SUBJECT_PREFIX = 'CLAIM LOCK: JOB: ';
+exports.MARK_JOB_AS_DONE_SUBJECT_PREFIX = 'RELEASE LOCK: JOB DONE: ';
+class StoredMessage {
+    constructor(commit) {
+        this.commit = commit;
+    }
+    commitHash() {
+        return this.commit.hash;
+    }
+    payload() {
+        return this.commit.body.trim();
+    }
+    isEmpty() {
+        return this instanceof NullMessage;
+    }
+}
+exports.StoredMessage = StoredMessage;
+class NullMessage extends StoredMessage {
+}
+exports.NullMessage = NullMessage;
+class StoredCreateJobMessage extends StoredMessage {
+}
+exports.StoredCreateJobMessage = StoredCreateJobMessage;
+class StoredMarkJobAsDoneMessage extends StoredMessage {
+}
+exports.StoredMarkJobAsDoneMessage = StoredMarkJobAsDoneMessage;
+function nullMessage() {
+    return new NullMessage((0, commit_1.nullCommit)());
+}
+exports.nullMessage = nullMessage;
+function messageFactoryFromCommit(commit) {
+    const commitSubject = commit.message;
+    if (commitSubject.startsWith(exports.CREATE_JOB_SUBJECT_PREFIX)) {
+        return new StoredCreateJobMessage(commit);
+    }
+    if (commitSubject.startsWith(exports.MARK_JOB_AS_DONE_SUBJECT_PREFIX)) {
+        return new StoredMarkJobAsDoneMessage(commit);
+    }
+    throw new Error(`Queue message not found in commit: ${commit.hash}`);
+}
+exports.messageFactoryFromCommit = messageFactoryFromCommit;
+//# sourceMappingURL=stored-message.js.map
 
 /***/ }),
 

@@ -1,3 +1,4 @@
+import * as cp from 'child_process';
 import simpleGit, {SimpleGit, CleanOptions} from 'simple-git';
 import {createTempDir} from 'jest-fixtures';
 
@@ -15,4 +16,13 @@ export function dummyPayload() {
   return JSON.stringify({
     field: 'value'
   });
+}
+
+export function gitLogForLatestCommit(gitRepoDir: string): string {
+  const output = cp
+    .execFileSync('git', ['log', '--show-signature', '-n1'], {
+      cwd: gitRepoDir
+    })
+    .toString();
+  return output;
 }
