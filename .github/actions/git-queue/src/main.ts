@@ -69,8 +69,33 @@ async function getCommitOptions(inputs: Inputs, git: SimpleGit): Promise<CommitO
 async function run(): Promise<void> {
   try {
     let inputs: context.Inputs = await context.getInputs();
+
     const gitRepoDir = inputs.gitRepoDir ? inputs.gitRepoDir : process.cwd();
-    const git: SimpleGit = simpleGit(gitRepoDir).env('GNUPGHOME', await getGnupgHome());
+    const gnuPGHomeDir = await getGnupgHome();
+
+    core.info(`git_repo_dir: ${gitRepoDir}`);
+    core.info(`gnupg_home_dir: ${gnuPGHomeDir}`);
+
+    const git: SimpleGit = simpleGit(gitRepoDir);
+
+    /*
+     * We need to pass the env vars to the child git process
+     * because the user might want to use some env vars like:
+     *
+     * For GPG:
+     * GNUPGHOME
+     *
+     * For git commit:
+     * GIT_AUTHOR_NAME
+     * GIT_AUTHOR_EMAIL
+     * GIT_AUTHOR_DATE
+     * GIT_COMMITTER_NAME
+     * GIT_COMMITTER_EMAIL
+     * GIT_COMMITTER_DATE
+     *
+     * TODO: Code review. Should we pass only the env vars used by git commit?
+     */
+    git.env(process.env);
 
     let queue = await Queue.create(inputs.queueName, gitRepoDir, git);
 
