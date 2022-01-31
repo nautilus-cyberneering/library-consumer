@@ -97,6 +97,31 @@ async function run(): Promise<void> {
      */
     git.env(process.env);
 
+    /*
+     * It seems the `git` child process does not apply the global git config,
+     * at least for the `git commit` command. You have to overwrite local config with the global.
+     */
+
+    const userName = await getGitConfig('user.name', git);
+    if (userName) {
+      git.addConfig('user.name', userName);
+    }
+
+    const userEmail = await getGitConfig('user.email', git);
+    if (userEmail) {
+      git.addConfig('user.email', userEmail);
+    }
+
+    const userSigningkey = await getGitConfig('user.signingkey', git);
+    if (userSigningkey) {
+      git.addConfig('user.signingkey', userSigningkey);
+    }
+
+    const commitGpgsign = await getGitConfig('user.gpgsign', git);
+    if (commitGpgsign) {
+      git.addConfig('user.gpgsign', commitGpgsign);
+    }
+
     let queue = await Queue.create(inputs.queueName, gitRepoDir, git);
 
     const commitOptions = await getCommitOptions(inputs, git);
