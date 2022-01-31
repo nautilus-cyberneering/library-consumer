@@ -20,10 +20,10 @@ inputs:
     description: 'The git repository directory. The default value is the current working dir'
     required: false
   git_commit_author:
-    description: 'The git commit --author argument. The default value is taken from git config in this order: local, system, global. Format: https://git-scm.com/docs/git-commit#Documentation/git-commit.txt---authorltauthorgt'
+    description: 'The git commit --author argument: https://git-scm.com/docs/git-commit#Documentation/git-commit.txt---authorltauthorgt'
     required: false
   git_commit_signing_key:
-    description: 'The git commit --gpg-sign argument. The default value is taken from git config in this order: local, system, global. Format: https://git-scm.com/docs/git-commit#Documentation/git-commit.txt---gpg-signltkeyidgt'
+    description: 'The git commit --gpg-sign argument: https://git-scm.com/docs/git-commit#Documentation/git-commit.txt---gpg-signltkeyidgt'
     required: false
 outputs:
   job_created:
