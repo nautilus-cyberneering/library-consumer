@@ -26,6 +26,7 @@ jobs:
           passphrase: ${{ secrets.PASSPHRASE }}
           git_user_signingkey: true
           git_commit_gpgsign: true
+          fingerprint: 'BD98B3F42545FF93EFF55F7F3F39AA1432CA6AD7'
 
       - name: Set git global user
         run: |
