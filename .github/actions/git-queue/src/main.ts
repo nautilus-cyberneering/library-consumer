@@ -21,14 +21,6 @@ async function getCommitAuthor(commitAuthor: string, git: SimpleGit): Promise<Co
   if (commitAuthor) {
     return CommitAuthor.fromEmailAddressString(commitAuthor);
   }
-
-  const userName = await getGitConfig('user.name', git);
-  const userEmail = await getGitConfig('user.email', git);
-
-  if (userName && userEmail) {
-    return CommitAuthor.fromNameAndEmail(userName, userEmail);
-  }
-
   return emptyCommitAuthor();
 }
 
@@ -36,26 +28,14 @@ async function getSigningKeyId(signingKeyId: string, git: SimpleGit): Promise<Si
   if (signingKeyId) {
     return new SigningKeyId(signingKeyId);
   }
-
-  const signingkey = await getGitConfig('user.signingkey', git);
-
-  if (signingkey) {
-    return new SigningKeyId(signingKeyId);
-  }
-
   return emptySigningKeyId();
 }
 
 async function getGitConfig(key: string, git: SimpleGit): Promise<string | null> {
-  const localOption = await git.getConfig(key, 'local');
-  if (localOption.value) return localOption.value;
-
-  const globalOption = await git.getConfig(key, 'global');
-  if (globalOption.value) return globalOption.value;
-
-  const systemOption = await git.getConfig(key, 'system');
-  if (systemOption.value) return systemOption.value;
-
+  const option = await git.getConfig(key);
+  if (option.value) {
+    return option.value;
+  }
   return null;
 }
 
