@@ -30,13 +30,4 @@ describe('CommitOptions', () => {
 
     expect(commitOptions.forSimpleGit()).toMatchObject({'--gpg-sign': '3F39AA1432CA6AD7'});
   });
-
-  it('should allow not to sign commits', () => {
-    const commitAuthor = new CommitAuthor(new EmailAddress('A Committer <committer@example.com>'));
-    const singingKeyId = new SigningKeyId('');
-
-    const commitOptions = new CommitOptions(commitAuthor, singingKeyId);
-
-    expect(commitOptions.forSimpleGit()).toMatchObject({'--no-gpg-sign': null});
-  });
 });

@@ -14,7 +14,6 @@ export class CommitOptions {
     return {
       '--allow-empty': null,
       ...(!this.commitAuthor.isEmpty() && {'--author': `"${this.commitAuthor.toString()}"`}),
-      ...(this.signingKeyId.isEmpty() && {'--no-gpg-sign': null}),
       ...(!this.signingKeyId.isEmpty() && {
         '--gpg-sign': this.signingKeyId.toString()
       })
