@@ -6,6 +6,7 @@ import {CommitAuthor, emptyCommitAuthor} from './commit-author';
 import {CommitOptions} from './commit-options';
 import {emptySigningKeyId, SigningKeyId} from './signing-key-id';
 import {Inputs} from './context';
+import {getGnupgHome} from './gpg-env';
 
 const ACTION_CREATE_JOB = 'create-job';
 const ACTION_NEXT_JOB = 'next-job';
@@ -69,7 +70,7 @@ async function run(): Promise<void> {
   try {
     let inputs: context.Inputs = await context.getInputs();
     const gitRepoDir = inputs.gitRepoDir ? inputs.gitRepoDir : process.cwd();
-    const git: SimpleGit = simpleGit(gitRepoDir);
+    const git: SimpleGit = simpleGit(gitRepoDir).env('GNUPGHOME', await getGnupgHome());
 
     let queue = await Queue.create(inputs.queueName, gitRepoDir, git);
 
