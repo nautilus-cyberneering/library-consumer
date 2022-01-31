@@ -31,9 +31,18 @@ const getGnupgHome = async (): Promise<string> => {
   return homedir;
 };
 
-const gpgConnectAgent = async (command: string): Promise<string> => {
+const gpgConnectAgent = async (command: string, homedir: string = ''): Promise<string> => {
+  let homeDirArg = '';
+  let cmd = '';
+
+  if (homedir != '') {
+    homeDirArg = `--homedir ${homedir}`;
+  }
+
+  cmd = `gpg-connect-agent ${homeDirArg} "${command}" /bye`;
+
   return await exec
-    .getExecOutput(`gpg-connect-agent "${command}" /bye`, [], {
+    .getExecOutput(cmd, [], {
       ignoreReturnCode: true,
       silent: true
     })
@@ -171,17 +180,23 @@ export const getKeygrips = async (fingerprint: string, homedir: string = ''): Pr
     });
 };
 
-export const configureAgent = async (config: string): Promise<void> => {
-  const gpgAgentConf = path.join(await getGnupgHome(), 'gpg-agent.conf');
-  await fs.writeFile(gpgAgentConf, config, function (err) {
+export const overwriteAgentConfiguration = async (config: string, homedir: string = ''): Promise<void> => {
+  if (homedir == '') {
+    homedir = await getGnupgHome();
+  }
+
+  const gpgAgentConfPath: string = path.join(homedir, 'gpg-agent.conf');
+
+  await fs.writeFile(gpgAgentConfPath, config, function (err) {
     if (err) throw err;
   });
-  await gpgConnectAgent('RELOADAGENT');
+
+  await gpgConnectAgent('RELOADAGENT', homedir);
 };
 
-export const presetPassphrase = async (keygrip: string, passphrase: string): Promise<string> => {
+export const presetPassphrase = async (keygrip: string, passphrase: string, homedir: string = ''): Promise<string> => {
   const hexPassphrase: string = Buffer.from(passphrase, 'utf8').toString('hex').toUpperCase();
-  await gpgConnectAgent(`PRESET_PASSPHRASE ${keygrip} -1 ${hexPassphrase}`);
+  await gpgConnectAgent(`PRESET_PASSPHRASE ${keygrip} -1 ${hexPassphrase}`, homedir);
   return await gpgConnectAgent(`KEYINFO ${keygrip}`);
 };
 
