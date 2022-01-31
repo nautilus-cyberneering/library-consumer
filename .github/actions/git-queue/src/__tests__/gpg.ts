@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import * as openpgp from './openpgp';
+import {getGnupgHome} from '../gpg-env';
 
 export const agentConfig = `default-cache-ttl 7200
 max-cache-ttl 31536000
@@ -19,17 +20,6 @@ export interface Dirs {
   datadir: string;
   homedir: string;
 }
-
-const getGnupgHome = async (): Promise<string> => {
-  if (process.env.GNUPGHOME) {
-    return process.env.GNUPGHOME;
-  }
-  let homedir: string = path.join(process.env.HOME || '', '.gnupg');
-  if (os.platform() == 'win32' && !process.env.HOME) {
-    homedir = path.join(process.env.USERPROFILE || '', '.gnupg');
-  }
-  return homedir;
-};
 
 const gpgConnectAgent = async (command: string, homedir: string = ''): Promise<string> => {
   let homeDirArg = '';
