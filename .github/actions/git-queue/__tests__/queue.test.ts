@@ -2,7 +2,8 @@ import {CommitAuthor} from '../src/commit-author';
 import {CommitOptions} from '../src/commit-options';
 import {Queue} from '../src/queue';
 import {SigningKeyId} from '../src/signing-key-id';
-import {createTempEmptyDir, createTempGnuPGHomeDir, dummyPayload, gitLogForLatestCommit, newSimpleGit} from '../src/__tests__/helpers';
+import {createTempEmptyDir, createInitializedTempGnuPGHomeDir, dummyPayload, gitLogForLatestCommit, newSimpleGit} from '../src/__tests__/helpers';
+import * as gpg from '../src/__tests__/gpg';
 
 function commitOptionsForTests() {
   const commitAuthor = CommitAuthor.fromNameAndEmail('A committer', 'committer@example.com');
@@ -59,15 +60,13 @@ describe('Queue', () => {
 
   it('should allow to sign commits', async () => {
     const gitRepoDir = await createTempEmptyDir();
-    const gnuPGHomeDir = await createTempGnuPGHomeDir();
+    const gnuPGHomeDir = await createInitializedTempGnuPGHomeDir();
 
     const git = await newSimpleGit(gitRepoDir, true);
 
     git.addConfig('user.name', 'A committer');
     git.addConfig('user.email', 'committer@example.com');
     git.env('GNUPGHOME', gnuPGHomeDir);
-
-    console.log(gnuPGHomeDir);
 
     let queue = await Queue.create('QUEUE NAME', gitRepoDir, git);
 
