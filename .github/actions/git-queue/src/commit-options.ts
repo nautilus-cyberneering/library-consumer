@@ -2,22 +2,22 @@ import {CommitAuthor} from './commit-author';
 import {SigningKeyId} from './signing-key-id';
 
 export class CommitOptions {
-  commitAuthor: CommitAuthor;
-  signingKeyId: SigningKeyId;
+  author: CommitAuthor;
+  gpgSig: SigningKeyId;
   noGpgSig: boolean;
 
-  constructor(commitAuthor: CommitAuthor, signingKeyId: SigningKeyId, noGpgSig: boolean) {
-    this.commitAuthor = commitAuthor;
-    this.signingKeyId = signingKeyId;
+  constructor(author: CommitAuthor, gpgSig: SigningKeyId, noGpgSig: boolean) {
+    this.author = author;
+    this.gpgSig = gpgSig;
     this.noGpgSig = noGpgSig;
   }
 
   forSimpleGit() {
     return {
       '--allow-empty': null,
-      ...(!this.commitAuthor.isEmpty() && {'--author': `"${this.commitAuthor.toString()}"`}),
-      ...(!this.signingKeyId.isEmpty() && {
-        '--gpg-sign': this.signingKeyId.toString()
+      ...(!this.author.isEmpty() && {'--author': `"${this.author.toString()}"`}),
+      ...(!this.gpgSig.isEmpty() && {
+        '--gpg-sign': this.gpgSig.toString()
       }),
       ...(this.noGpgSig && {'--no-gpg-sign': null})
     };
@@ -25,9 +25,9 @@ export class CommitOptions {
 
   toString(): string {
     const allowEmpty = '--allow-empty';
-    const commitAuthor = this.commitAuthor.isEmpty() ? '' : `--author="${this.commitAuthor.toString()}"`;
-    const signingKeyId = this.signingKeyId.isEmpty() ? '' : `--gpg-sign=${this.signingKeyId.toString()}`;
+    const author = this.author.isEmpty() ? '' : `--author="${this.author.toString()}"`;
+    const gpgSig = this.gpgSig.isEmpty() ? '' : `--gpg-sign=${this.gpgSig.toString()}`;
     const noGpgSig = this.noGpgSig ? '--no-gpg-sign' : '';
-    return `${allowEmpty} ${commitAuthor} ${signingKeyId} ${noGpgSig}`;
+    return `${allowEmpty} ${author} ${gpgSig} ${noGpgSig}`;
   }
 }
