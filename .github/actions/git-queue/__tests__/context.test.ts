@@ -31,6 +31,7 @@ describe('getInputs', () => {
     process.env['INPUT_GIT_REPO_DIR'] = '/home/';
     process.env['INPUT_GIT_COMMIT_AUTHOR'] = 'A committer <committer@example.com>';
     process.env['INPUT_GIT_COMMIT_SIGNING_KEY'] = '3F39AA1432CA6AD7';
+    process.env['INPUT_GIT_COMMIT_NO_GPG_SIGN'] = 'true';
 
     const inputs = await context.getInputs();
 
@@ -40,6 +41,7 @@ describe('getInputs', () => {
     expect(inputs.gitRepoDir).toBe('/home/');
     expect(inputs.gitCommitAuthor).toBe('A committer <committer@example.com>');
     expect(inputs.gitCommitSigningKey).toBe('3F39AA1432CA6AD7');
+    expect(inputs.gitCommitNoGpgSign).toBe(true);
   });
 });
 

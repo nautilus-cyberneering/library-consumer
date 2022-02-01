@@ -83,4 +83,16 @@ describe('GitHub Action', () => {
 
     expect(gitLogOutput.includes('gpg:                using RSA key BD98B3F42545FF93EFF55F7F3F39AA1432CA6AD7')).toBe(true);
   });
+
+  it('should allow to disable commit signing for a given commit', async () => {
+    process.env['INPUT_ACTION'] = 'create-job';
+    process.env['INPUT_JOB_PAYLOAD'] = dummyPayload();
+    process.env['INPUT_GIT_COMMIT_NO_GPG_SIGN'] = 'true';
+
+    executeAction(process.env);
+
+    const gitLogOutput = gitLogForLatestCommit(gitRepoDir);
+
+    expect(!gitLogOutput.includes('gpg:                using RSA key BD98B3F42545FF93EFF55F7F3F39AA1432CA6AD7')).toBe(true);
+  });
 });

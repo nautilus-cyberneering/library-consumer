@@ -25,6 +25,9 @@ inputs:
   git_commit_signing_key:
     description: 'The git commit --gpg-sign argument: https://git-scm.com/docs/git-commit#Documentation/git-commit.txt---gpg-signltkeyidgt'
     required: false
+  git_commit_no_gpg_sign:
+    description: 'The git commit --no-gpg-sign argument: https://git-scm.com/docs/git-commit#Documentation/git-commit.txt---no-gpg-sign'
+    required: false    
 outputs:
   job_created:
     description: 'Boolean, true if the job was created successfully'

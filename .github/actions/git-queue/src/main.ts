@@ -42,8 +42,9 @@ async function getGitConfig(key: string, git: SimpleGit): Promise<string | null>
 async function getCommitOptions(inputs: Inputs, git: SimpleGit): Promise<CommitOptions> {
   const commitAuthor = await getCommitAuthor(inputs.gitCommitAuthor, git);
   const commitSigningKeyId = await getSigningKeyId(inputs.gitCommitSigningKey, git);
-  const commitOptions = new CommitOptions(commitAuthor, commitSigningKeyId);
-  return commitOptions;
+  const noGpgSig = inputs.gitCommitNoGpgSign;
+
+  return new CommitOptions(commitAuthor, commitSigningKeyId, noGpgSig);
 }
 
 async function run(): Promise<void> {
@@ -97,9 +98,9 @@ async function run(): Promise<void> {
       git.addConfig('user.signingkey', userSigningkey);
     }
 
-    const commitGpgsign = await getGitConfig('user.gpgsign', git);
+    const commitGpgsign = await getGitConfig('commit.gpgsign', git);
     if (commitGpgsign) {
-      git.addConfig('user.gpgsign', commitGpgsign);
+      git.addConfig('commit.gpgsign', commitGpgsign);
     }
 
     let queue = await Queue.create(inputs.queueName, gitRepoDir, git);

@@ -8,13 +8,15 @@ import * as gpg from '../src/__tests__/gpg';
 function commitOptionsForTests() {
   const commitAuthor = CommitAuthor.fromNameAndEmail('A committer', 'committer@example.com');
   const signingKeyId = new SigningKeyId('');
-  return new CommitOptions(commitAuthor, signingKeyId);
+  const noGpgSig = true;
+  return new CommitOptions(commitAuthor, signingKeyId, noGpgSig);
 }
 
 function commitOptionsForTestsUsingSignature() {
   const signingKeyId = new SigningKeyId('BD98B3F42545FF93EFF55F7F3F39AA1432CA6AD7');
   const commitAuthor = CommitAuthor.fromNameAndEmail('A committer', 'committer@example.com');
-  return new CommitOptions(commitAuthor, signingKeyId);
+  const noGpgSig = false;
+  return new CommitOptions(commitAuthor, signingKeyId, noGpgSig);
 }
 
 describe('Queue', () => {
