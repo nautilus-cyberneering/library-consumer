@@ -3,7 +3,7 @@ import {CommitOptions} from '../src/commit-options';
 import {Queue} from '../src/queue';
 import {SigningKeyId} from '../src/signing-key-id';
 import {createTempEmptyDir, createInitializedTempGnuPGHomeDir, dummyPayload, gitLogForLatestCommit, newSimpleGit} from '../src/__tests__/helpers';
-import * as gpg from '../src/__tests__/gpg';
+import {testConfiguration} from '../src/__tests__/config';
 
 function commitOptionsForTests() {
   const author = CommitAuthor.fromNameAndEmail('A committer', 'committer@example.com');
@@ -14,7 +14,7 @@ function commitOptionsForTests() {
 
 function commitOptionsForTestsUsingSignature() {
   const author = CommitAuthor.fromNameAndEmail('A committer', 'committer@example.com');
-  const signingKeyId = new SigningKeyId('BD98B3F42545FF93EFF55F7F3F39AA1432CA6AD7');
+  const signingKeyId = new SigningKeyId(testConfiguration().gpg_signing_key.fingerprint);
   const noGpgSig = false;
   return new CommitOptions(author, signingKeyId, noGpgSig);
 }
@@ -63,11 +63,12 @@ describe('Queue', () => {
   it('should allow to sign commits', async () => {
     const gitRepoDir = await createTempEmptyDir();
     const gnuPGHomeDir = await createInitializedTempGnuPGHomeDir();
+    const signingKeyFingerprint = testConfiguration().gpg_signing_key.fingerprint;
 
     const git = await newSimpleGit(gitRepoDir, true);
 
-    git.addConfig('user.name', 'A committer');
-    git.addConfig('user.email', 'committer@example.com');
+    git.addConfig('user.name', testConfiguration().git.user.name);
+    git.addConfig('user.email', testConfiguration().git.user.email);
     git.env('GNUPGHOME', gnuPGHomeDir);
 
     let queue = await Queue.create('QUEUE NAME', gitRepoDir, git);
@@ -76,6 +77,6 @@ describe('Queue', () => {
 
     const output = gitLogForLatestCommit(gitRepoDir);
 
-    expect(output.includes('gpg:                using RSA key BD98B3F42545FF93EFF55F7F3F39AA1432CA6AD7')).toBe(true);
+    expect(output.includes(`gpg:                using RSA key ${signingKeyFingerprint}`)).toBe(true);
   });
 });

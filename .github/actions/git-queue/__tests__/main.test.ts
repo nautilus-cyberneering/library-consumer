@@ -2,7 +2,8 @@ import * as process from 'process';
 import * as cp from 'child_process';
 import * as path from 'path';
 import {expect, test} from '@jest/globals';
-import {dummyPayload, gitLogForLatestCommit, createInitializedTempGitDir} from '../src/__tests__/helpers';
+import {dummyPayload, gitLogForLatestCommit, createInitializedTempGitDir, createInitializedTempGnuPGHomeDir} from '../src/__tests__/helpers';
+import {testConfiguration} from '../src/__tests__/config';
 
 function executeAction(env) {
   const np = process.execPath;
@@ -73,15 +74,22 @@ describe('GitHub Action', () => {
   });
 
   it('should allow to overwrite commit signing key', async () => {
+    const gnuPGHomeDir = await createInitializedTempGnuPGHomeDir();
+    const signingKeyFingerprint = testConfiguration().gpg_signing_key.fingerprint;
+
     process.env['INPUT_ACTION'] = 'create-job';
     process.env['INPUT_JOB_PAYLOAD'] = dummyPayload();
-    process.env['INPUT_GIT_COMMIT_GPG_SIGN'] = '3F39AA1432CA6AD7';
+    process.env['INPUT_GIT_COMMIT_GPG_SIGN'] = signingKeyFingerprint;
 
-    executeAction(process.env);
+    const env = {...process.env};
+
+    env.GNUPGHOME = gnuPGHomeDir;
+
+    executeAction(env);
 
     const gitLogOutput = gitLogForLatestCommit(gitRepoDir);
 
-    expect(gitLogOutput.includes('gpg:                using RSA key BD98B3F42545FF93EFF55F7F3F39AA1432CA6AD7')).toBe(true);
+    expect(gitLogOutput.includes(`gpg:                using RSA key ${signingKeyFingerprint}`)).toBe(true);
   });
 
   it('should allow to disable commit signing for a given commit', async () => {
