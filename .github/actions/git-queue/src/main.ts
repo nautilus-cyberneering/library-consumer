@@ -1,12 +1,13 @@
 import * as core from '@actions/core';
 import * as context from './context';
+import {SimpleGit} from 'simple-git';
 import {Queue} from './queue';
-import simpleGit, {SimpleGit, CleanOptions} from 'simple-git';
 import {CommitAuthor, emptyCommitAuthor} from './commit-author';
 import {CommitOptions} from './commit-options';
 import {emptySigningKeyId, SigningKeyId} from './signing-key-id';
 import {Inputs} from './context';
 import {getGnupgHome} from './gpg-env';
+import {createInstance} from './simple-git-factory';
 
 const ACTION_CREATE_JOB = 'create-job';
 const ACTION_NEXT_JOB = 'next-job';
@@ -31,14 +32,6 @@ async function getSigningKeyId(signingKeyId: string, git: SimpleGit): Promise<Si
   return emptySigningKeyId();
 }
 
-async function getGitConfig(key: string, git: SimpleGit): Promise<string | null> {
-  const option = await git.getConfig(key);
-  if (option.value) {
-    return option.value;
-  }
-  return null;
-}
-
 async function getCommitOptions(inputs: Inputs, git: SimpleGit): Promise<CommitOptions> {
   const author = await getCommitAuthor(inputs.gitCommitAuthor, git);
   const gpgSign = await getSigningKeyId(inputs.gitCommitGpgSign, git);
@@ -57,51 +50,7 @@ async function run(): Promise<void> {
     core.info(`git_repo_dir: ${gitRepoDir}`);
     core.info(`gnupg_home_dir: ${gnuPGHomeDir}`);
 
-    const git: SimpleGit = simpleGit(gitRepoDir);
-
-    /*
-     * We need to pass the env vars to the child git process
-     * because the user might want to use some env vars like:
-     *
-     * For GPG:
-     * GNUPGHOME
-     *
-     * For git commit:
-     * GIT_AUTHOR_NAME
-     * GIT_AUTHOR_EMAIL
-     * GIT_AUTHOR_DATE
-     * GIT_COMMITTER_NAME
-     * GIT_COMMITTER_EMAIL
-     * GIT_COMMITTER_DATE
-     *
-     * TODO: Code review. Should we pass only the env vars used by git commit?
-     */
-    git.env(process.env);
-
-    /*
-     * It seems the `git` child process does not apply the global git config,
-     * at least for the `git commit` command. You have to overwrite local config with the global.
-     */
-
-    const userName = await getGitConfig('user.name', git);
-    if (userName) {
-      git.addConfig('user.name', userName);
-    }
-
-    const userEmail = await getGitConfig('user.email', git);
-    if (userEmail) {
-      git.addConfig('user.email', userEmail);
-    }
-
-    const userSigningkey = await getGitConfig('user.signingkey', git);
-    if (userSigningkey) {
-      git.addConfig('user.signingkey', userSigningkey);
-    }
-
-    const commitGpgsign = await getGitConfig('commit.gpgsign', git);
-    if (commitGpgsign) {
-      git.addConfig('commit.gpgsign', commitGpgsign);
-    }
+    const git = await createInstance(gitRepoDir);
 
     let queue = await Queue.create(inputs.queueName, gitRepoDir, git);
 
