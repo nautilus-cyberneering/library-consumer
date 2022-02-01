@@ -7,7 +7,7 @@ export interface Inputs {
   jobPayload: string;
   gitRepoDir: string;
   gitCommitAuthor: string;
-  gitCommitSigningKey: string;
+  gitCommitGpgSign: string;
   gitCommitNoGpgSign: boolean;
 }
 
@@ -18,7 +18,7 @@ export async function getInputs(): Promise<Inputs> {
     jobPayload: core.getInput('job_payload', {required: false}),
     gitRepoDir: core.getInput('git_repo_dir', {required: false}),
     gitCommitAuthor: core.getInput('git_commit_author', {required: false}),
-    gitCommitSigningKey: core.getInput('git_commit_signing_key', {required: false}),
+    gitCommitGpgSign: core.getInput('git_commit_gpg_sign', {required: false}),
     gitCommitNoGpgSign: core.getInput('git_commit_no_gpg_sign', {required: false}) == 'true' ? true : false
   };
 }

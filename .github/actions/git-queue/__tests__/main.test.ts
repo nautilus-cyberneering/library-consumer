@@ -75,7 +75,7 @@ describe('GitHub Action', () => {
   it('should allow to overwrite commit signing key', async () => {
     process.env['INPUT_ACTION'] = 'create-job';
     process.env['INPUT_JOB_PAYLOAD'] = dummyPayload();
-    process.env['INPUT_GIT_COMMIT_SIGNING_KEY'] = '3F39AA1432CA6AD7';
+    process.env['INPUT_GIT_COMMIT_GPG_SIGN'] = '3F39AA1432CA6AD7';
 
     executeAction(process.env);
 
@@ -93,6 +93,6 @@ describe('GitHub Action', () => {
 
     const gitLogOutput = gitLogForLatestCommit(gitRepoDir);
 
-    expect(!gitLogOutput.includes('gpg:                using RSA key BD98B3F42545FF93EFF55F7F3F39AA1432CA6AD7')).toBe(true);
+    expect(!gitLogOutput.includes('gpg: Signature')).toBe(true);
   });
 });
