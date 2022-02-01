@@ -3,8 +3,6 @@ name: Test git-queue action
 on:
   push:
     branches: [main, issue-*]
-  pull_request:
-    branches: [main, issue-*]
   workflow_dispatch:
 
 jobs:
