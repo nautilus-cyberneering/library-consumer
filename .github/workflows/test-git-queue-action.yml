@@ -45,10 +45,6 @@ jobs:
           action: "create-job"
           job_payload: '{"field": "value", "state": "pending"}'
 
-      - name: Push create-job message
-        if: ${{ steps.create-job.outputs.job_created == 'true' }}
-        run: git push
-     
       - name: Mutual exclusion code
         if: ${{ steps.create-job.outputs.job_created == 'true' }}
         run: echo "Running the job that requires mutual exclusion"
@@ -70,14 +66,9 @@ jobs:
           action: "mark-job-as-done"
           job_payload: '{"field": "value", "state": "done"}'
 
-      - name: Push mark-job-as-done message
-        if: ${{ steps.create-job.outputs.job_created == 'true' }}
-        run: git push
-
       - name: Show new commits
         if: ${{ steps.mark-job-as-done.outputs.job_created == 'true' }}
         run: |
           git show --show-signature ${{ steps.create-job.outputs.job_commit }}
           git show --show-signature ${{ steps.mark-job-as-done.outputs.job_commit }}
-
        
