@@ -52,14 +52,22 @@ exports.emptyCommitAuthor = emptyCommitAuthor;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CommitOptions = void 0;
 class CommitOptions {
-    constructor(commitAuthor, signingKeyId) {
+    constructor(commitAuthor, signingKeyId, noGpgSig) {
         this.commitAuthor = commitAuthor;
         this.signingKeyId = signingKeyId;
+        this.noGpgSig = noGpgSig;
     }
     forSimpleGit() {
-        return Object.assign(Object.assign(Object.assign({ '--allow-empty': null }, (!this.commitAuthor.isEmpty() && { '--author': `"${this.commitAuthor.toString()}"` })), (this.signingKeyId.isEmpty() && { '--no-gpg-sign': null })), (!this.signingKeyId.isEmpty() && {
+        return Object.assign(Object.assign(Object.assign({ '--allow-empty': null }, (!this.commitAuthor.isEmpty() && { '--author': `"${this.commitAuthor.toString()}"` })), (!this.signingKeyId.isEmpty() && {
             '--gpg-sign': this.signingKeyId.toString()
-        }));
+        })), (this.noGpgSig && { '--no-gpg-sign': null }));
+    }
+    toString() {
+        const allowEmpty = '--allow-empty';
+        const commitAuthor = this.commitAuthor.isEmpty() ? '' : `--author="${this.commitAuthor.toString()}"`;
+        const signingKeyId = this.signingKeyId.isEmpty() ? '' : `--gpg-sign=${this.signingKeyId.toString()}`;
+        const noGpgSig = this.noGpgSig ? '--no-gpg-sign' : '';
+        return `${allowEmpty} ${commitAuthor} ${signingKeyId} ${noGpgSig}`;
     }
 }
 exports.CommitOptions = CommitOptions;
@@ -141,7 +149,8 @@ function getInputs() {
             jobPayload: core.getInput('job_payload', { required: false }),
             gitRepoDir: core.getInput('git_repo_dir', { required: false }),
             gitCommitAuthor: core.getInput('git_commit_author', { required: false }),
-            gitCommitSigningKey: core.getInput('git_commit_signing_key', { required: false })
+            gitCommitSigningKey: core.getInput('git_commit_signing_key', { required: false }),
+            gitCommitNoGpgSign: core.getInput('git_commit_no_gpg_sign', { required: false }) == 'true' ? true : false
         };
     });
 }
@@ -232,6 +241,58 @@ exports.EmailAddress = EmailAddress;
 
 /***/ }),
 
+/***/ 314:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getGnupgHome = void 0;
+const path = __importStar(__webpack_require__(622));
+const os = __importStar(__webpack_require__(87));
+const getGnupgHome = () => __awaiter(void 0, void 0, void 0, function* () {
+    if (process.env.GNUPGHOME) {
+        return process.env.GNUPGHOME;
+    }
+    let homedir = path.join(process.env.HOME || '', '.gnupg');
+    if (os.platform() == 'win32' && !process.env.HOME) {
+        homedir = path.join(process.env.USERPROFILE || '', '.gnupg');
+    }
+    return homedir;
+});
+exports.getGnupgHome = getGnupgHome;
+//# sourceMappingURL=gpg-env.js.map
+
+/***/ }),
+
 /***/ 109:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -276,6 +337,7 @@ const simple_git_1 = __importDefault(__webpack_require__(959));
 const commit_author_1 = __webpack_require__(606);
 const commit_options_1 = __webpack_require__(360);
 const signing_key_id_1 = __webpack_require__(869);
+const gpg_env_1 = __webpack_require__(314);
 const ACTION_CREATE_JOB = 'create-job';
 const ACTION_NEXT_JOB = 'next-job';
 const ACTION_MARK_JOB_AS_DONE = 'mark-job-as-done';
@@ -288,11 +350,6 @@ function getCommitAuthor(commitAuthor, git) {
         if (commitAuthor) {
             return commit_author_1.CommitAuthor.fromEmailAddressString(commitAuthor);
         }
-        const userName = yield getGitConfig('user.name', git);
-        const userEmail = yield getGitConfig('user.email', git);
-        if (userName && userEmail) {
-            return commit_author_1.CommitAuthor.fromNameAndEmail(userName, userEmail);
-        }
         return (0, commit_author_1.emptyCommitAuthor)();
     });
 }
@@ -301,24 +358,15 @@ function getSigningKeyId(signingKeyId, git) {
         if (signingKeyId) {
             return new signing_key_id_1.SigningKeyId(signingKeyId);
         }
-        const signingkey = yield getGitConfig('user.signingkey', git);
-        if (signingkey) {
-            return new signing_key_id_1.SigningKeyId(signingKeyId);
-        }
         return (0, signing_key_id_1.emptySigningKeyId)();
     });
 }
 function getGitConfig(key, git) {
     return __awaiter(this, void 0, void 0, function* () {
-        const localOption = yield git.getConfig(key, 'local');
-        if (localOption.value)
-            return localOption.value;
-        const globalOption = yield git.getConfig(key, 'global');
-        if (globalOption.value)
-            return globalOption.value;
-        const systemOption = yield git.getConfig(key, 'system');
-        if (systemOption.value)
-            return systemOption.value;
+        const option = yield git.getConfig(key);
+        if (option.value) {
+            return option.value;
+        }
         return null;
     });
 }
@@ -326,8 +374,8 @@ function getCommitOptions(inputs, git) {
     return __awaiter(this, void 0, void 0, function* () {
         const commitAuthor = yield getCommitAuthor(inputs.gitCommitAuthor, git);
         const commitSigningKeyId = yield getSigningKeyId(inputs.gitCommitSigningKey, git);
-        const commitOptions = new commit_options_1.CommitOptions(commitAuthor, commitSigningKeyId);
-        return commitOptions;
+        const noGpgSig = inputs.gitCommitNoGpgSign;
+        return new commit_options_1.CommitOptions(commitAuthor, commitSigningKeyId, noGpgSig);
     });
 }
 function run() {
@@ -335,7 +383,48 @@ function run() {
         try {
             let inputs = yield context.getInputs();
             const gitRepoDir = inputs.gitRepoDir ? inputs.gitRepoDir : process.cwd();
+            const gnuPGHomeDir = yield (0, gpg_env_1.getGnupgHome)();
+            core.info(`git_repo_dir: ${gitRepoDir}`);
+            core.info(`gnupg_home_dir: ${gnuPGHomeDir}`);
             const git = (0, simple_git_1.default)(gitRepoDir);
+            /*
+             * We need to pass the env vars to the child git process
+             * because the user might want to use some env vars like:
+             *
+             * For GPG:
+             * GNUPGHOME
+             *
+             * For git commit:
+             * GIT_AUTHOR_NAME
+             * GIT_AUTHOR_EMAIL
+             * GIT_AUTHOR_DATE
+             * GIT_COMMITTER_NAME
+             * GIT_COMMITTER_EMAIL
+             * GIT_COMMITTER_DATE
+             *
+             * TODO: Code review. Should we pass only the env vars used by git commit?
+             */
+            git.env(process.env);
+            /*
+             * It seems the `git` child process does not apply the global git config,
+             * at least for the `git commit` command. You have to overwrite local config with the global.
+             */
+            const userName = yield getGitConfig('user.name', git);
+            if (userName) {
+                git.addConfig('user.name', userName);
+            }
+            const userEmail = yield getGitConfig('user.email', git);
+            if (userEmail) {
+                git.addConfig('user.email', userEmail);
+            }
+            const userSigningkey = yield getGitConfig('user.signingkey', git);
+            if (userSigningkey) {
+                git.addConfig('user.signingkey', userSigningkey);
+            }
+            const commitGpgsign = yield getGitConfig('commit.gpgsign', git);
+            if (commitGpgsign) {
+                git.addConfig('commit.gpgsign', commitGpgsign);
+            }
             let queue = yield queue_1.Queue.create(inputs.queueName, gitRepoDir, git);
             const commitOptions = yield getCommitOptions(inputs, git);
             switch (inputs.action) {
