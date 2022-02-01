@@ -1,9 +1,9 @@
 import * as cp from 'child_process';
 import simpleGit, {SimpleGit} from 'simple-git';
 import {createTempDir} from 'jest-fixtures';
-import * as fs from 'fs';
 import * as openpgp from './openpgp';
 import * as gpg from './gpg';
+import { testConfiguration } from './config';
 
 export async function createTempEmptyDir(): Promise<string> {
   const tempGitDirPath = await createTempDir();
@@ -12,25 +12,14 @@ export async function createTempEmptyDir(): Promise<string> {
 
 export async function createInitializedTempGnuPGHomeDir(debug: boolean = false): Promise<string> {
   const tempGnuPGHomeDir = await createTempDir();
+  const keygrip = testConfiguration().gpg_signing_key.keygrip;
+  const gpgPrivateKey = testConfiguration().gpg_signing_key.private_key;
+  const passphrase = testConfiguration().gpg_signing_key.passphrase;
 
   if (debug) {
     console.log(`GnuPG homedir: ${tempGnuPGHomeDir}`);
   }
-
-  // Fingerprint of the GPG key we use to sign commit in tests
-  const fingerprint = 'BD98B3F42545FF93EFF55F7F3F39AA1432CA6AD7';
-  const keygrip = '00CB9308AE0B6DE018C5ADBAB29BA7899D6062BE';
-
-  const gpgPrivateKey = fs.readFileSync('__tests__/fixtures/test-key-committer.pgp', {
-    encoding: 'utf8',
-    flag: 'r'
-  });
-
-  const passphrase = fs.readFileSync('__tests__/fixtures/test-key-committer.pass', {
-    encoding: 'utf8',
-    flag: 'r'
-  });
-
+  
   await gpg.overwriteAgentConfiguration(gpg.agentConfig, tempGnuPGHomeDir);
 
   const privateKey = await openpgp.readPrivateKey(gpgPrivateKey);
