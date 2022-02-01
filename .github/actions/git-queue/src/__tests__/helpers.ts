@@ -13,9 +13,13 @@ export async function createTempEmptyDir(): Promise<string> {
 export async function createInitializedTempGnuPGHomeDir(debug: boolean = false): Promise<string> {
   const tempGnuPGHomeDir = await createTempDir();
 
+  if (debug) {
+    console.log(`GnuPG homedir: ${tempGnuPGHomeDir}`);
+  }
+
   // Fingerprint of the GPG key we use to sign commit in tests
   const fingerprint = 'BD98B3F42545FF93EFF55F7F3F39AA1432CA6AD7';
-  //const keygrip = '00CB9308AE0B6DE018C5ADBAB29BA7899D6062BE';
+  const keygrip = '00CB9308AE0B6DE018C5ADBAB29BA7899D6062BE';
 
   const gpgPrivateKey = fs.readFileSync('__tests__/fixtures/test-key-committer.pgp', {
     encoding: 'utf8',
@@ -46,17 +50,14 @@ export async function createInitializedTempGnuPGHomeDir(debug: boolean = false):
     }
   });
 
-  for (let keygrip of await gpg.getKeygrips(fingerprint, tempGnuPGHomeDir)) {
-    if (debug) {
-      console.log(`Presetting passphrase for ${keygrip}`);
-    }
-
-    await gpg.presetPassphrase(keygrip, passphrase, tempGnuPGHomeDir).then(stdout => {
-      if (debug) {
-        console.log(stdout);
-      }
-    });
+  if (debug) {
+    console.log(`Presetting passphrase for ${keygrip}`);
   }
+  await gpg.presetPassphrase(keygrip, passphrase, tempGnuPGHomeDir).then(stdout => {
+    if (debug) {
+      console.log(stdout);
+    }
+  });
 
   return tempGnuPGHomeDir;
 }
