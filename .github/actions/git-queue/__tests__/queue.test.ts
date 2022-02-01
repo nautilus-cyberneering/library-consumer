@@ -12,7 +12,7 @@ function commitOptionsForTests() {
 }
 
 function commitOptionsForTestsUsingSignature() {
-  const signingKeyId = new SigningKeyId('3F39AA1432CA6AD7');
+  const signingKeyId = new SigningKeyId('BD98B3F42545FF93EFF55F7F3F39AA1432CA6AD7');
   const commitAuthor = CommitAuthor.fromNameAndEmail('A committer', 'committer@example.com');
   return new CommitOptions(commitAuthor, signingKeyId);
 }
