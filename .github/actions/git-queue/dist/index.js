@@ -52,22 +52,22 @@ exports.emptyCommitAuthor = emptyCommitAuthor;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.CommitOptions = void 0;
 class CommitOptions {
-    constructor(commitAuthor, signingKeyId, noGpgSig) {
-        this.commitAuthor = commitAuthor;
-        this.signingKeyId = signingKeyId;
+    constructor(author, gpgSig, noGpgSig) {
+        this.author = author;
+        this.gpgSig = gpgSig;
         this.noGpgSig = noGpgSig;
     }
     forSimpleGit() {
-        return Object.assign(Object.assign(Object.assign({ '--allow-empty': null }, (!this.commitAuthor.isEmpty() && { '--author': `"${this.commitAuthor.toString()}"` })), (!this.signingKeyId.isEmpty() && {
-            '--gpg-sign': this.signingKeyId.toString()
+        return Object.assign(Object.assign(Object.assign({ '--allow-empty': null }, (!this.author.isEmpty() && { '--author': `"${this.author.toString()}"` })), (!this.gpgSig.isEmpty() && {
+            '--gpg-sign': this.gpgSig.toString()
         })), (this.noGpgSig && { '--no-gpg-sign': null }));
     }
     toString() {
         const allowEmpty = '--allow-empty';
-        const commitAuthor = this.commitAuthor.isEmpty() ? '' : `--author="${this.commitAuthor.toString()}"`;
-        const signingKeyId = this.signingKeyId.isEmpty() ? '' : `--gpg-sign=${this.signingKeyId.toString()}`;
+        const author = this.author.isEmpty() ? '' : `--author="${this.author.toString()}"`;
+        const gpgSig = this.gpgSig.isEmpty() ? '' : `--gpg-sign=${this.gpgSig.toString()}`;
         const noGpgSig = this.noGpgSig ? '--no-gpg-sign' : '';
-        return `${allowEmpty} ${commitAuthor} ${signingKeyId} ${noGpgSig}`;
+        return `${allowEmpty} ${author} ${gpgSig} ${noGpgSig}`;
     }
 }
 exports.CommitOptions = CommitOptions;
@@ -149,7 +149,7 @@ function getInputs() {
             jobPayload: core.getInput('job_payload', { required: false }),
             gitRepoDir: core.getInput('git_repo_dir', { required: false }),
             gitCommitAuthor: core.getInput('git_commit_author', { required: false }),
-            gitCommitSigningKey: core.getInput('git_commit_signing_key', { required: false }),
+            gitCommitGpgSign: core.getInput('git_commit_gpg_sign', { required: false }),
             gitCommitNoGpgSign: core.getInput('git_commit_no_gpg_sign', { required: false }) == 'true' ? true : false
         };
     });
@@ -372,10 +372,10 @@ function getGitConfig(key, git) {
 }
 function getCommitOptions(inputs, git) {
     return __awaiter(this, void 0, void 0, function* () {
-        const commitAuthor = yield getCommitAuthor(inputs.gitCommitAuthor, git);
-        const commitSigningKeyId = yield getSigningKeyId(inputs.gitCommitSigningKey, git);
+        const author = yield getCommitAuthor(inputs.gitCommitAuthor, git);
+        const gpgSign = yield getSigningKeyId(inputs.gitCommitGpgSign, git);
         const noGpgSig = inputs.gitCommitNoGpgSign;
-        return new commit_options_1.CommitOptions(commitAuthor, commitSigningKeyId, noGpgSig);
+        return new commit_options_1.CommitOptions(author, gpgSign, noGpgSig);
     });
 }
 function run() {

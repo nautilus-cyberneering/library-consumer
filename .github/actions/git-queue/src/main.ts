@@ -40,11 +40,11 @@ async function getGitConfig(key: string, git: SimpleGit): Promise<string | null>
 }
 
 async function getCommitOptions(inputs: Inputs, git: SimpleGit): Promise<CommitOptions> {
-  const commitAuthor = await getCommitAuthor(inputs.gitCommitAuthor, git);
-  const commitSigningKeyId = await getSigningKeyId(inputs.gitCommitSigningKey, git);
+  const author = await getCommitAuthor(inputs.gitCommitAuthor, git);
+  const gpgSign = await getSigningKeyId(inputs.gitCommitGpgSign, git);
   const noGpgSig = inputs.gitCommitNoGpgSign;
 
-  return new CommitOptions(commitAuthor, commitSigningKeyId, noGpgSig);
+  return new CommitOptions(author, gpgSign, noGpgSig);
 }
 
 async function run(): Promise<void> {

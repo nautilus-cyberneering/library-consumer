@@ -6,17 +6,17 @@ import {createTempEmptyDir, createInitializedTempGnuPGHomeDir, dummyPayload, git
 import * as gpg from '../src/__tests__/gpg';
 
 function commitOptionsForTests() {
-  const commitAuthor = CommitAuthor.fromNameAndEmail('A committer', 'committer@example.com');
+  const author = CommitAuthor.fromNameAndEmail('A committer', 'committer@example.com');
   const signingKeyId = new SigningKeyId('');
   const noGpgSig = true;
-  return new CommitOptions(commitAuthor, signingKeyId, noGpgSig);
+  return new CommitOptions(author, signingKeyId, noGpgSig);
 }
 
 function commitOptionsForTestsUsingSignature() {
+  const author = CommitAuthor.fromNameAndEmail('A committer', 'committer@example.com');
   const signingKeyId = new SigningKeyId('BD98B3F42545FF93EFF55F7F3F39AA1432CA6AD7');
-  const commitAuthor = CommitAuthor.fromNameAndEmail('A committer', 'committer@example.com');
   const noGpgSig = false;
-  return new CommitOptions(commitAuthor, signingKeyId, noGpgSig);
+  return new CommitOptions(author, signingKeyId, noGpgSig);
 }
 
 describe('Queue', () => {
