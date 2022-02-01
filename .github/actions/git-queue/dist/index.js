@@ -326,18 +326,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__webpack_require__(186));
 const context = __importStar(__webpack_require__(842));
 const queue_1 = __webpack_require__(65);
-const simple_git_1 = __importDefault(__webpack_require__(959));
 const commit_author_1 = __webpack_require__(606);
 const commit_options_1 = __webpack_require__(360);
 const signing_key_id_1 = __webpack_require__(869);
 const gpg_env_1 = __webpack_require__(314);
+const simple_git_factory_1 = __webpack_require__(649);
 const ACTION_CREATE_JOB = 'create-job';
 const ACTION_NEXT_JOB = 'next-job';
 const ACTION_MARK_JOB_AS_DONE = 'mark-job-as-done';
@@ -361,15 +358,6 @@ function getSigningKeyId(signingKeyId, git) {
         return (0, signing_key_id_1.emptySigningKeyId)();
     });
 }
-function getGitConfig(key, git) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const option = yield git.getConfig(key);
-        if (option.value) {
-            return option.value;
-        }
-        return null;
-    });
-}
 function getCommitOptions(inputs, git) {
     return __awaiter(this, void 0, void 0, function* () {
         const author = yield getCommitAuthor(inputs.gitCommitAuthor, git);
@@ -386,45 +374,7 @@ function run() {
             const gnuPGHomeDir = yield (0, gpg_env_1.getGnupgHome)();
             core.info(`git_repo_dir: ${gitRepoDir}`);
             core.info(`gnupg_home_dir: ${gnuPGHomeDir}`);
-            const git = (0, simple_git_1.default)(gitRepoDir);
-            /*
-             * We need to pass the env vars to the child git process
-             * because the user might want to use some env vars like:
-             *
-             * For GPG:
-             * GNUPGHOME
-             *
-             * For git commit:
-             * GIT_AUTHOR_NAME
-             * GIT_AUTHOR_EMAIL
-             * GIT_AUTHOR_DATE
-             * GIT_COMMITTER_NAME
-             * GIT_COMMITTER_EMAIL
-             * GIT_COMMITTER_DATE
-             *
-             * TODO: Code review. Should we pass only the env vars used by git commit?
-             */
-            git.env(process.env);
-            /*
-             * It seems the `git` child process does not apply the global git config,
-             * at least for the `git commit` command. You have to overwrite local config with the global.
-             */
-            const userName = yield getGitConfig('user.name', git);
-            if (userName) {
-                git.addConfig('user.name', userName);
-            }
-            const userEmail = yield getGitConfig('user.email', git);
-            if (userEmail) {
-                git.addConfig('user.email', userEmail);
-            }
-            const userSigningkey = yield getGitConfig('user.signingkey', git);
-            if (userSigningkey) {
-                git.addConfig('user.signingkey', userSigningkey);
-            }
-            const commitGpgsign = yield getGitConfig('commit.gpgsign', git);
-            if (commitGpgsign) {
-                git.addConfig('commit.gpgsign', commitGpgsign);
-            }
+            const git = yield (0, simple_git_factory_1.createInstance)(gitRepoDir);
             let queue = yield queue_1.Queue.create(inputs.queueName, gitRepoDir, git);
             const commitOptions = yield getCommitOptions(inputs, git);
             switch (inputs.action) {
@@ -650,6 +600,84 @@ function emptySigningKeyId() {
 }
 exports.emptySigningKeyId = emptySigningKeyId;
 //# sourceMappingURL=signing-key-id.js.map
+
+/***/ }),
+
+/***/ 649:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createInstance = void 0;
+const simple_git_1 = __importDefault(__webpack_require__(959));
+function getGitConfig(key, git) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const option = yield git.getConfig(key);
+        if (option.value) {
+            return option.value;
+        }
+        return null;
+    });
+}
+function createInstance(gitRepoDir) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const git = (0, simple_git_1.default)(gitRepoDir);
+        /*
+         * We need to pass the env vars to the child git process
+         * because the user might want to use some env vars like:
+         *
+         * For GPG:
+         * GNUPGHOME
+         *
+         * For git commit:
+         * GIT_AUTHOR_NAME
+         * GIT_AUTHOR_EMAIL
+         * GIT_AUTHOR_DATE
+         * GIT_COMMITTER_NAME
+         * GIT_COMMITTER_EMAIL
+         * GIT_COMMITTER_DATE
+         *
+         * TODO: Code review. Should we pass only the env vars used by git commit?
+         */
+        git.env(process.env);
+        /*
+         * It seems the `git` child process does not apply the global git config,
+         * at least for the `git commit` command. You have to overwrite local config with the global.
+         */
+        const userName = yield getGitConfig('user.name', git);
+        if (userName) {
+            git.addConfig('user.name', userName);
+        }
+        const userEmail = yield getGitConfig('user.email', git);
+        if (userEmail) {
+            git.addConfig('user.email', userEmail);
+        }
+        const userSigningkey = yield getGitConfig('user.signingkey', git);
+        if (userSigningkey) {
+            git.addConfig('user.signingkey', userSigningkey);
+        }
+        const commitGpgsign = yield getGitConfig('commit.gpgsign', git);
+        if (commitGpgsign) {
+            git.addConfig('commit.gpgsign', commitGpgsign);
+        }
+        return git;
+    });
+}
+exports.createInstance = createInstance;
+//# sourceMappingURL=simple-git-factory.js.map
 
 /***/ }),
 
