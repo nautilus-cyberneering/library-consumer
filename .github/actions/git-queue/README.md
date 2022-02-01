@@ -81,7 +81,7 @@ jobs:
 
 ## Customizing
 
-### inputs
+### Inputs
 
 Following inputs are available
 
@@ -95,7 +95,7 @@ Following inputs are available
 | `git_commit_gpg_sign` | String | The git commit [--gpg-sign](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt---gpg-signltkeyidgt) argument |
 | `git_commit_no_gpg_sign` | String | The git commit [--no-gpg-sign](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt---no-gpg-sign) argument |
 
-### outputs
+### Outputs
 
 Following outputs are available
 
@@ -104,6 +104,28 @@ Following outputs are available
 | `job_created` | String | Boolean, `true` if the job was created successfully |
 | `job_commit`  | String | The commit hash of the newly created commits, when the action creates a new commit |
 | `job_payload` | String | The job payload |
+
+### Environment variables
+
+If you need to pass environment variables to the `git` child process, you only need to set those variables by using the `env` section in the action:
+
+```yml
+- name: Create job
+  id: create-job
+  uses: ./.github/actions/git-queue
+  with:
+    queue_name: "Library Update [library-aaa]"
+    action: "create-job"
+    job_payload: "job_payload"
+  env:
+    GNUPGHOME: '~/.gnupg'
+    GIT_AUTHOR_NAME: 'A Committer'
+    GIT_AUTHOR_EMAIL: 'committer@example.com'
+    GIT_AUTHOR_DATE: '2005-04-07T22:13:13'
+    GIT_COMMITTER_NAME: 'A Committer'
+    GIT_COMMITTER_EMAIL: 'committer@example.com'
+    GIT_COMMITTER_DATE: '2005-04-07T22:13:13'
+```
 
 ## Development
 
