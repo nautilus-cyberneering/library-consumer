@@ -8,7 +8,6 @@ import {emptySigningKeyId, SigningKeyId} from './signing-key-id';
 import {Inputs} from './context';
 import {getGnupgHome} from './gpg-env';
 import {createInstance} from './simple-git-factory';
-import {checkIsBareRepoTask} from 'simple-git/src/lib/tasks/check-is-repo';
 
 const ACTION_CREATE_JOB = 'create-job';
 const ACTION_NEXT_JOB = 'next-job';
