@@ -75,6 +75,7 @@ async function run(): Promise<void> {
 
         if (!nextJob.isEmpty()) {
           await core.group(`Setting outputs`, async () => {
+            context.setOutput('job_found', true);
             context.setOutput('job_commit', nextJob.commitHash());
             context.setOutput('job_payload', nextJob.payload());
 
