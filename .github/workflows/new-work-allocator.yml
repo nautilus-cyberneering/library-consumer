@@ -1,0 +1,83 @@
+name: New Work allocator
+
+on:
+  push:
+    branches: [main, issue-*]
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          submodules: "true"
+
+      - name: Import GPG key
+        id: import-gpg
+        uses: crazy-max/ghaction-import-gpg@v4
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+          git_config_global: true
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          fingerprint: "BD98B3F42545FF93EFF55F7F3F39AA1432CA6AD7"
+
+      - name: Build the git-queue action
+        run: |
+          cd ./.github/actions/git-queue
+          yarn install && yarn build
+
+      - name: Get next job
+        id: get-next-job
+        uses: ./.github/actions/git-queue
+        with:
+          queue_name: "Library Update [library-aaa]"
+          action: "next-job"
+
+      - name: Update submodule to get new commit ref
+        id: update-submodule
+        if: ${{ steps.get-next-job.outputs.job_found == 'false' }}
+        shell: bash
+        run: |
+          git submodule status libraries/aaa
+          PREVIOUS_REF=$(git submodule status | awk '{print $1}' | sed 's/-//' | sed 's/+//' | sed 's/U//')
+          echo -e "::set-output name=previous_ref::$PREVIOUS_REF"
+          git submodule update --remote libraries/aaa
+          CURRENT_REF=$(git submodule status | awk '{print $1}' | sed 's/-//' | sed 's/+//' | sed 's/U//')
+          echo -e "::set-output name=current_ref::$CURRENT_REF"
+          UPDATED=$(if [ "$PREVIOUS_REF" != "$CURRENT_REF" ]; then echo "true"; else echo "false"; fi)
+          echo -e "::set-output name=updated::$UPDATED"
+
+      - name: Build job message payload
+        id: build-payload
+        if: ${{ steps.get-next-job.outputs.job_found == 'false' && steps.update-submodule.outputs.updated == 'true' }}
+        shell: bash
+        run: |
+          PAYLOAD="CLAIM LOCK: JOB: Library Update [library-aaa]
+          \n
+          Update Library Submodule and Process Changes:
+          https://github.com/josecelano/library-aaa/commit/${{ steps.update-submodule.outputs.previous_ref }}
+          ->
+          https://github.com/josecelano/library-aaa/commit/${{ steps.update-submodule.outputs.current_ref }}
+          \n
+          echo -e "::set-output name=payload::$PAYLOAD"
+
+      - name: Debug step outputs
+        if: ${{ steps.get-next-job.outputs.job_found == 'false' && steps.update-submodule.outputs.updated == 'true' }}
+        run: |
+          echo -e "previous_ref: ${{ steps.update-submodule.outputs.previous_ref }}"
+          echo -e "current_ref: ${{ steps.update-submodule.outputs.current_ref }}"
+          echo -e "updated: ${{ steps.update-submodule.outputs.updated }}"
+          echo -e "payload:\n${{ steps.build-payload.outputs.payload }}"
+
+      - name: Create job
+        id: create-job
+        if: ${{ steps.get-next-job.outputs.job_found == 'false' && steps.update-submodule.outputs.updated == 'true' }}
+        uses: ./.github/actions/git-queue
+        with:
+          queue_name: "Library Update [library-aaa]"
+          action: "create-job"
+          job_payload: "${{ steps.build-payload.outputs.payload }}"
