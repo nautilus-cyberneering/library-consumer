@@ -14,59 +14,90 @@ function executeAction(env) {
   return cp.execFileSync(np, [ip], options).toString();
 }
 
-function createJob() {
-  process.env['INPUT_ACTION'] = 'create-job';
-  process.env['INPUT_JOB_PAYLOAD'] = dummyPayload();
-  executeAction(process.env);
+function createJob(gitRepoDir) {
+  const env = {
+    ...process.env,
+    INPUT_QUEUE_NAME: 'QUEUE-NAME',
+    INPUT_GIT_REPO_DIR: gitRepoDir,
+    INPUT_ACTION: 'create-job',
+    INPUT_JOB_PAYLOAD: dummyPayload(),
+    INPUT_GIT_COMMIT_NO_GPG_SIGN: true
+  };
+
+  executeAction(env);
 }
 
 describe('GitHub Action', () => {
-  let gitRepoDir: string;
-
-  beforeEach(async () => {
-    process.env['INPUT_QUEUE_NAME'] = 'QUEUE-NAME';
-    process.env['INPUT_GIT_REPO_DIR'] = await createInitializedTempGitDir();
-    gitRepoDir = process.env['INPUT_GIT_REPO_DIR'];
-  });
-
   it('should create a new job', async () => {
-    process.env['INPUT_ACTION'] = 'create-job';
-    process.env['INPUT_JOB_PAYLOAD'] = dummyPayload();
+    const gitRepoDir = await createInitializedTempGitDir();
 
-    const output = executeAction(process.env);
+    const env = {
+      ...process.env,
+      INPUT_QUEUE_NAME: 'QUEUE-NAME',
+      INPUT_GIT_REPO_DIR: gitRepoDir,
+      INPUT_ACTION: 'create-job',
+      INPUT_JOB_PAYLOAD: dummyPayload(),
+      INPUT_GIT_COMMIT_NO_GPG_SIGN: true
+    };
+
+    const output = executeAction(env);
 
     expect(output.includes('::set-output name=job_created::true')).toBe(true);
     expect(output.includes('::set-output name=job_commit::')).toBe(true);
   });
 
   it('should get the next job', async () => {
-    createJob();
+    const gitRepoDir = await createInitializedTempGitDir();
 
-    process.env['INPUT_ACTION'] = 'next-job';
+    createJob(gitRepoDir);
 
-    const output = executeAction(process.env);
+    const env = {
+      ...process.env,
+      INPUT_QUEUE_NAME: 'QUEUE-NAME',
+      INPUT_GIT_REPO_DIR: gitRepoDir,
+      INPUT_ACTION: 'next-job',
+      INPUT_GIT_COMMIT_NO_GPG_SIGN: 'true'
+    };
+
+    const output = executeAction(env);
 
     expect(output.includes('::set-output name=job_commit::')).toBe(true);
     expect(output.includes(`::set-output name=job_payload::${dummyPayload()}`)).toBe(true);
   });
 
   it('should mark the pending job as done', async () => {
-    createJob();
+    const gitRepoDir = await createInitializedTempGitDir();
 
-    process.env['INPUT_ACTION'] = 'mark-job-as-done';
+    createJob(gitRepoDir);
 
-    const output = executeAction(process.env);
+    const env = {
+      ...process.env,
+      INPUT_QUEUE_NAME: 'QUEUE-NAME',
+      INPUT_GIT_REPO_DIR: gitRepoDir,
+      INPUT_ACTION: 'mark-job-as-done',
+      INPUT_GIT_COMMIT_NO_GPG_SIGN: 'true'
+    };
+
+    const output = executeAction(env);
 
     expect(output.includes('::set-output name=job_created::true')).toBe(true);
     expect(output.includes('::set-output name=job_commit::')).toBe(true);
   });
 
   it('should allow to overwrite commit author', async () => {
-    process.env['INPUT_ACTION'] = 'create-job';
-    process.env['INPUT_JOB_PAYLOAD'] = dummyPayload();
-    process.env['INPUT_GIT_COMMIT_AUTHOR'] = 'A committer <committer@example.com>';
+    const gitRepoDir = await createInitializedTempGitDir();
 
-    executeAction(process.env);
+    const env = {
+      ...process.env,
+      INPUT_QUEUE_NAME: 'QUEUE-NAME',
+      INPUT_GIT_REPO_DIR: gitRepoDir,
+      INPUT_ACTION: 'create-job',
+      INPUT_JOB_PAYLOAD: dummyPayload(),
+      INPUT_GIT_COMMIT_NO_GPG_SIGN: 'true',
+      INPUT_GIT_COMMIT_AUTHOR: 'A committer <committer@example.com>'
+    };
+
+    executeAction(env);
 
     const gitLogOutput = gitLogForLatestCommit(gitRepoDir);
 
@@ -74,16 +105,19 @@ describe('GitHub Action', () => {
   });
 
   it('should allow to overwrite commit signing key', async () => {
+    const gitRepoDir = await createInitializedTempGitDir();
     const gnuPGHomeDir = await createInitializedTempGnuPGHomeDir();
     const signingKeyFingerprint = testConfiguration().gpg_signing_key.fingerprint;
 
-    process.env['INPUT_ACTION'] = 'create-job';
-    process.env['INPUT_JOB_PAYLOAD'] = dummyPayload();
-    process.env['INPUT_GIT_COMMIT_GPG_SIGN'] = signingKeyFingerprint;
-
-    const env = {...process.env};
-
-    env.GNUPGHOME = gnuPGHomeDir;
+    const env = {
+      ...process.env,
+      INPUT_QUEUE_NAME: 'QUEUE-NAME',
+      INPUT_GIT_REPO_DIR: gitRepoDir,
+      INPUT_ACTION: 'create-job',
+      INPUT_JOB_PAYLOAD: dummyPayload(),
+      INPUT_GIT_COMMIT_GPG_SIGN: signingKeyFingerprint,
+      GNUPGHOME: gnuPGHomeDir
+    };
 
     executeAction(env);
 
@@ -93,11 +127,18 @@ describe('GitHub Action', () => {
   });
 
   it('should allow to disable commit signing for a given commit', async () => {
-    process.env['INPUT_ACTION'] = 'create-job';
-    process.env['INPUT_JOB_PAYLOAD'] = dummyPayload();
-    process.env['INPUT_GIT_COMMIT_NO_GPG_SIGN'] = 'true';
+    const gitRepoDir = await createInitializedTempGitDir();
 
-    executeAction(process.env);
+    const env = {
+      ...process.env,
+      INPUT_QUEUE_NAME: 'QUEUE-NAME',
+      INPUT_GIT_REPO_DIR: gitRepoDir,
+      INPUT_ACTION: 'create-job',
+      INPUT_JOB_PAYLOAD: dummyPayload(),
+      INPUT_GIT_COMMIT_NO_GPG_SIGN: 'true'
+    };
+
+    executeAction(env);
 
     const gitLogOutput = gitLogForLatestCommit(gitRepoDir);
 
