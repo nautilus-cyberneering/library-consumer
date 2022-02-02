@@ -14,17 +14,15 @@ describe('EmailAddress', () => {
     expect(emailAddress.toString()).toBe('A Committer <committer@example.com>');
   });
 
-  it('should validate a simple email address', () => {
-    const t = () => {
+  it('should fail when you try to build a bad formatted email address', () => {
+    const a1 = () => {
       new EmailAddress('abc_NO_AT_example.com');
     };
-    expect(t).toThrow(Error);
-  });
+    expect(a1).toThrow(Error);
 
-  it('should validate a email address with display name', () => {
-    const t = () => {
+    const a2 = () => {
       new EmailAddress('A Committer <abc_NO_AT_example.com>');
     };
-    expect(t).toThrow(Error);
+    expect(a2).toThrow(Error);
   });
 });
