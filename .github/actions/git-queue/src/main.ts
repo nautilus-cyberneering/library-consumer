@@ -8,6 +8,7 @@ import {emptySigningKeyId, SigningKeyId} from './signing-key-id';
 import {Inputs} from './context';
 import {getGnupgHome} from './gpg-env';
 import {createInstance} from './simple-git-factory';
+import {checkIsBareRepoTask} from 'simple-git/src/lib/tasks/check-is-repo';
 
 const ACTION_CREATE_JOB = 'create-job';
 const ACTION_NEXT_JOB = 'next-job';
@@ -47,8 +48,10 @@ async function run(): Promise<void> {
     const gitRepoDir = inputs.gitRepoDir ? inputs.gitRepoDir : process.cwd();
     const gnuPGHomeDir = await getGnupgHome();
 
-    core.info(`git_repo_dir: ${gitRepoDir}`);
-    core.info(`gnupg_home_dir: ${gnuPGHomeDir}`);
+    await core.group(`Debug info`, async () => {
+      core.info(`git_repo_dir: ${gitRepoDir}`);
+      core.info(`gnupg_home_dir: ${gnuPGHomeDir}`);
+    });
 
     const git = await createInstance(gitRepoDir);
 
@@ -73,16 +76,17 @@ async function run(): Promise<void> {
       case ACTION_NEXT_JOB:
         const nextJob = queue.getNextJob();
 
-        if (!nextJob.isEmpty()) {
-          await core.group(`Setting outputs`, async () => {
-            context.setOutput('job_found', true);
+        await core.group(`Setting outputs`, async () => {
+          context.setOutput('job_found', !nextJob.isEmpty());
+
+          if (!nextJob.isEmpty()) {
             context.setOutput('job_commit', nextJob.commitHash());
             context.setOutput('job_payload', nextJob.payload());
 
             core.info(`job_commit: ${nextJob.commitHash()}`);
             core.info(`job_payload: ${nextJob.payload()}`);
-          });
-        }
+          }
+        });
 
         break;
 
