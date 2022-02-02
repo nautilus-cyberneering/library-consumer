@@ -14,3 +14,7 @@ done
 
 echo "::set-output name=previous_ref::$PREVIOUS_REF"
 echo "::set-output name=current_ref::$CURRENT_REF"
+
+echo -e "previous_ref: $PREVIOUS_REF"
+echo -e "current_ref: $CURRENT_REF"
+
