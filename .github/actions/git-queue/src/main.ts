@@ -94,6 +94,7 @@ async function run(): Promise<void> {
         const markJobAsDoneCommit = await queue.markJobAsDone(inputs.jobPayload, commitOptions);
 
         await core.group(`Setting outputs`, async () => {
+          // TODO: 'commit_created' or 'job_marked_as_done' or 'job_updated' instead of 'job_created'
           context.setOutput('job_created', true);
           context.setOutput('job_commit', markJobAsDoneCommit.hash);
 
