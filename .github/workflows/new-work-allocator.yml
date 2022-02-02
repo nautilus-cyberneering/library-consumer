@@ -63,7 +63,10 @@ jobs:
           \n
           PREVIOUS_REF=${{ steps.update-submodule.outputs.previous_ref }}
           CURRENT_REF=${{ steps.update-submodule.outputs.current_ref }}"
-          echo -e "::set-output name=payload::$(echo -e "$PAYLOAD")"
+          PAYLOAD="${PAYLOAD//'%'/'%25'}"
+          PAYLOAD="${PAYLOAD//$'\n'/'%0A'}"
+          PAYLOAD="${PAYLOAD//$'\r'/'%0D'}"
+          echo "::set-output name=payload::$(echo "$PAYLOAD")"
 
       - name: Debug step outputs
         if: ${{ steps.get-next-job.outputs.job_found == 'false' && steps.update-submodule.outputs.updated == 'true' }}
