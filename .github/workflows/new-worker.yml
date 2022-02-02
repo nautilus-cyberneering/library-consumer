@@ -44,7 +44,7 @@ jobs:
         if: ${{ steps.get-next-job.outputs.job_found == 'true' }}
         shell: bash
         run: |
-          ./scripts/parse-payload.sh
+          PAYLOAD="${{ steps.get-next-job.outputs.job_payload }}" ./scripts/parse-payload.sh
 
       - name: Update submodule
         id: update-submodule
@@ -53,8 +53,7 @@ jobs:
         run: |
           cd libraries/aaa
           git fetch --all
-          git checkout ${{ steps.parse-payload.outputs.current_ref }}
-          echo "::set-output name=updated::true"
+          git checkout ${{ steps.parse-payload.outputs.current_ref }} && echo "::set-output name=updated::true"
 
       - name: Commit submodule update
         id: commit-submodule-update
@@ -97,7 +96,7 @@ jobs:
           echo -e "previous_ref: ${{ steps.parse-payload.outputs.previous_ref }}"
           echo -e "current_ref: ${{ steps.parse-payload.outputs.current_ref }}"
           echo -e "updated: ${{ steps.update-submodule.outputs.updated }}"
-          echo -e "payload:\n${{ steps.build-payload.outputs.payload }}"
+          echo -e "built payload:\n${{ steps.build-payload.outputs.payload }}"
 
       - name: Mark job as done
         id: mark-job-as-done
@@ -106,7 +105,7 @@ jobs:
         with:
           queue_name: "Library Update [library-aaa]"
           action: "mark-job-as-done"
-          job_payload: ""
+          job_payload: ${{ steps.build-payload.outputs.payload }}
 
       - name: Show new git-queue commit
         if: ${{ steps.get-next-job.outputs.job_found == 'true' && steps.mark-job-as-done.outputs.job_created == 'true' }}
