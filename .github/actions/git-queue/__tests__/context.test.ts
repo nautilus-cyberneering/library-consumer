@@ -23,28 +23,6 @@ describe('setOutput', () => {
   });
 });
 
-describe('getInputs', () => {
-  it('should parse the inputs', async () => {
-    process.env['INPUT_QUEUE_NAME'] = 'queue name';
-    process.env['INPUT_ACTION'] = 'create-job';
-    process.env['INPUT_JOB_PAYLOAD'] = dummyPayload();
-    process.env['INPUT_GIT_REPO_DIR'] = '/home/';
-    process.env['INPUT_GIT_COMMIT_AUTHOR'] = 'A committer <committer@example.com>';
-    process.env['INPUT_GIT_COMMIT_GPG_SIGN'] = '3F39AA1432CA6AD7';
-    process.env['INPUT_GIT_COMMIT_NO_GPG_SIGN'] = 'true';
-
-    const inputs = await context.getInputs();
-
-    expect(inputs.queueName).toBe('queue name');
-    expect(inputs.action).toBe('create-job');
-    expect(inputs.jobPayload).toBe(dummyPayload());
-    expect(inputs.gitRepoDir).toBe('/home/');
-    expect(inputs.gitCommitAuthor).toBe('A committer <committer@example.com>');
-    expect(inputs.gitCommitGpgSign).toBe('3F39AA1432CA6AD7');
-    expect(inputs.gitCommitNoGpgSign).toBe(true);
-  });
-});
-
 // Assert that process.stdout.write calls called only with the given arguments.
 function assertWriteCalls(calls: string[]): void {
   expect(process.stdout.write).toHaveBeenCalledTimes(calls.length);

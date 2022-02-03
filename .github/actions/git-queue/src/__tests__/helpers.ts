@@ -27,8 +27,6 @@ export async function createInitializedTempGnuPGHomeDir(debug: boolean = false):
     console.log(`Fingerprint primary key: ${privateKey.fingerprint}`);
   }
 
-  process.env.GNUPGHOME = tempGnuPGHomeDir;
-
   if (debug) {
     console.log('Importing key ...');
   }
