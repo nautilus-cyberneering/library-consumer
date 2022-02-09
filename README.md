@@ -1,5 +1,7 @@
 # Library Consumer
 
+NOTE: We think this idea can be very suseful for a lot of projects so we decided to create a [GitHub Action](https://github.com/Nautilus-Cyberneering/git-queue). We are still working on it and we have not replace the embedded action in theis repo with the [other one](https://github.com/Nautilus-Cyberneering/git-queue) yet.
+
 Crazy idea: let's use git empty commits as a concurrency lock to provide exclusive access to git merges.
 
 The problems we are trying to solve:
