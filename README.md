@@ -96,11 +96,12 @@ git ci --allow-empty -m "trigger workflow on consumer repo"
 
 When the workflow finishes the log output should be something like:
 
-```s
-* 17b0ebd - (HEAD -> main, origin/main) RELEASE LOCK: JOB DONE: Library Update [library-aaa] (2022-01-18 11:58:7 +0000) <github-actions[bot]>
-* 03b5e38 - library aaa synced to commit 63ea9fda2489780651c732629a7b6e71ad50ffd5 (2022-01-18 11:58:46 +0000) <github-actions[bot]>
-* fbfd046 - update library aaa to commit 63ea9fda2489780651c732629a7b6e71ad50ffd5 (2022-01-18 11:58:45 +0000) <github-actions[bot]>
-* 1731a29 - CLAIM LOCK: JOB: Library Update [library-aaa] (2022-01-18 11:56:58 +0000) <github-actions[bot]>
+```console
+* 0340edd - (origin/main) 📝✅: Library Update [library-aaa]: job.ref.8c017ac2298c0039cf5a81cadbf2e6143604f206 (2022-02-23 17:02:31 +0000) <NautilusCyberneering[bot]>
+* 5e05fe8 - update library aaa to commit fb1df3a3aa113e0e3d2ec8f6c44e3d189660e505 (2022-02-23 17:02:28 +0000) <A committer>
+* 0e00d62 - 📝👔: Library Update [library-aaa]: job.ref.8c017ac2298c0039cf5a81cadbf2e6143604f206 (2022-02-23 17:02:27 +0000) <NautilusCyberneering[bot]>
+* 730e0e0 - remove all embedded git-queue test workflow (2022-02-23 17:02:04 +0000) <Jose Celano>
+* 8c017ac - 📝🈺: Library Update [library-aaa] (2022-02-23 17:01:07 +0000) <NautilusCyberneering[bot]>
 ```
 
 The second workflow executed should fail:
