@@ -1,6 +1,6 @@
 # Library Consumer
 
->NOTE: We think this idea can be very useful for a lot of projects so we decided to create a [GitHub Action](https://github.com/Nautilus-Cyberneering/git-queue). We are still working on it and we have not replace the embedded action in theis repo with the [other one](https://github.com/Nautilus-Cyberneering/git-queue) yet.
+>NOTE: We think this idea can be very useful for a lot of projects so we decided to create a [GitHub Action](https://github.com/Nautilus-Cyberneering/git-queue). We are still working on it and we have not replaced the embedded action in this repo with the [other one](https://github.com/Nautilus-Cyberneering/git-queue) yet.
 
 Crazy idea: let's use git empty commits as a concurrency lock to provide exclusive access to git merges.
 
@@ -118,56 +118,3 @@ Pull changes, including submodules.
 ```shell
 git pull --recurse-submodules
 ```
-
-## Specification
-
-- Commit content must be empty.
-- The first line of the commit message (subject) must follow a predefined format.
-- The rest of the commit message (body) can contain a formatted text.
-
-### Commit messages subject
-
-Claim lock:
-
-```text
-CLAIM LOCK: JOB: Library Update [library-aaa]
-```
-
-Release lock:
-
-```text
-RELEASE LOCK: JOB DONE: Library Update [library-aaa]
-```
-
-### Commit messages body
-
-This could be a sample "claim lock" commit message body:
-
-```text
-CLAIM LOCK: JOB: Library Update [library-aaa]
-
-Update Library Submodule and Process Changes:
-https://github.com/josecelano/library-aaa/commit/0e4a414dd76569bc4d7fd565e68f69d7d436ced4
-->
-https://github.com/josecelano/library-aaa/commit/63ea9fda2489780651c732629a7b6e71ad50ffd5
-
-PREVIOUS_REF=0e4a414dd76569bc4d7fd565e68f69d7d436ced4
-CURRENT_REF=63ea9fda2489780651c732629a7b6e71ad50ffd5
-```
-
-This could be a sample "release lock" commit message body:
-
-```text
-RELEASE LOCK: JOB DONE: Library Update [library-aaa]
-
-Successfully completed Library Update according to specification in Lock:
-https://github.com/josecelano/library-aaa/commit/63ea9fda2489780651c732629a7b6e71ad50ffd5
-```
-
-## Links
-
-- [GitMQ: Git message queue](https://github.com/emad-elsaid/gitmq)
-
-## Credits
-
-- Original idea by [Cameron Garnham](https://github.com/da2ce7)
