@@ -98,7 +98,7 @@ jobs:
 
       - name: Build job finished message payload
         id: build-finish-payload
-        if: ${{ steps.start-job.outputs.job_created == 'true' }}
+        if: ${{ steps.start-job.outputs.job_started == 'true' }}
         shell: bash
         run: |
           PAYLOAD="Successfully completed Library Update according to specification in job:
@@ -125,11 +125,6 @@ jobs:
           echo -e "updated: ${{ steps.update-submodule.outputs.updated }}"
           echo -e "start payload:\n${{ steps.build-start-payload.outputs.payload }}"
           echo -e "finish payload:\n${{ steps.build-finish-payload.outputs.payload }}"
-
-      - name: Show new git-queue commit
-        if: ${{ steps.get-next-job.outputs.job_found == 'true' && steps.finish-job.outputs.job_created == 'true' }}
-        run: |
-          git show --show-signature ${{ steps.finish-job.outputs.job_commit }}
 
       - name: Show new commits
         run: |
