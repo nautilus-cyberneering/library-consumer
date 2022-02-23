@@ -34,19 +34,40 @@ jobs:
 
       - name: Get next job
         id: get-next-job
-        uses: ./.github/actions/git-queue
+        uses: Nautilus-Cyberneering/git-queue@v1-beta
         with:
           queue_name: "Library Update [library-aaa]"
           action: "next-job"
-
-        # Begin mutual exclusion job
 
       - name: Parse job payload
         id: parse-payload
         if: ${{ steps.get-next-job.outputs.job_found == 'true' }}
         shell: bash
         run: |
-          PAYLOAD="${{ steps.get-next-job.outputs.job_payload }}" ./scripts/parse-payload.sh
+          PAYLOAD="${{ steps.get-next-job.outputs.job_payload }}" ./scripts/parse-payload.sh          
+
+      - name: Build job started message payload
+        id: build-start-payload
+        if: ${{ steps.get-next-job.outputs.job_found == 'true' }}
+        shell: bash
+        run: |
+          PAYLOAD="Successfully started Library Update according to specification in job:
+          https://github.com/josecelano/library-aaa/commit/${{ steps.parse-payload.outputs.current_ref }}"
+          PAYLOAD="${PAYLOAD//'%'/'%25'}"
+          PAYLOAD="${PAYLOAD//$'\n'/'%0A'}"
+          PAYLOAD="${PAYLOAD//$'\r'/'%0D'}"
+          echo "::set-output name=payload::$(echo "$PAYLOAD")"
+
+      - name: Mark job as started
+        id: start-job
+        if: ${{ steps.get-next-job.outputs.job_found == 'true' }}
+        uses: Nautilus-Cyberneering/git-queue@v1-beta
+        with:
+          queue_name: "Library Update [library-aaa]"
+          action: "start-job"
+          job_payload: ${{ steps.build-start-payload.outputs.payload }}          
+
+        # Begin mutual exclusion job
 
       - name: Update submodule
         id: update-submodule
@@ -80,9 +101,9 @@ jobs:
 
         # End mutual exclusion job
 
-      - name: Build job message payload
-        id: build-payload
-        if: ${{ steps.get-next-job.outputs.job_found == 'true' }}
+      - name: Build job finished message payload
+        id: build-finish-payload
+        if: ${{ steps.start-job.outputs.job_created == 'true' }}
         shell: bash
         run: |
           PAYLOAD="Successfully completed Library Update according to specification in job:
@@ -92,32 +113,36 @@ jobs:
           PAYLOAD="${PAYLOAD//$'\r'/'%0D'}"
           echo "::set-output name=payload::$(echo "$PAYLOAD")"
 
+      - name: Mark job as finished
+        id: finish-job
+        if: ${{ steps.start-job.outputs.job_started == 'true' }}
+        uses: Nautilus-Cyberneering/git-queue@v1-beta
+        with:
+          queue_name: "Library Update [library-aaa]"
+          action: "finish-job"
+          job_payload: ${{ steps.build-finish-payload.outputs.payload }}
+
       - name: Debug step outputs
         if: ${{ steps.get-next-job.outputs.job_found == 'true' }}
         run: |
           echo -e "previous_ref: ${{ steps.parse-payload.outputs.previous_ref }}"
           echo -e "current_ref: ${{ steps.parse-payload.outputs.current_ref }}"
           echo -e "updated: ${{ steps.update-submodule.outputs.updated }}"
-          echo -e "built payload:\n${{ steps.build-payload.outputs.payload }}"
-
-      - name: Mark job as done
-        id: mark-job-as-done
-        if: ${{ steps.get-next-job.outputs.job_found == 'true' }}
-        uses: ./.github/actions/git-queue
-        with:
-          queue_name: "Library Update [library-aaa]"
-          action: "mark-job-as-done"
-          job_payload: ${{ steps.build-payload.outputs.payload }}
+          echo -e "start payload:\n${{ steps.build-start-payload.outputs.payload }}"
+          echo -e "finish payload:\n${{ steps.build-finish-payload.outputs.payload }}"
 
       - name: Show new git-queue commit
-        if: ${{ steps.get-next-job.outputs.job_found == 'true' && steps.mark-job-as-done.outputs.job_created == 'true' }}
+        if: ${{ steps.get-next-job.outputs.job_found == 'true' && steps.finish-job.outputs.job_created == 'true' }}
         run: |
-          git show --show-signature ${{ steps.mark-job-as-done.outputs.job_commit }}
+          git show --show-signature ${{ steps.finish-job.outputs.job_commit }}
+
+      - name: Show new commits
+        run: |
+          git log --pretty="fuller" --show-signature -5        
 
       - name: Push
         id: push
-        if: ${{ steps.get-next-job.outputs.job_found == 'true' && steps.mark-job-as-done.outputs.job_created == 'true' }}
+        if: ${{ steps.get-next-job.outputs.job_found == 'true' }}
         shell: bash
         run: |
           git push
-          
