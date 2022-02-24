@@ -46,8 +46,8 @@ jobs:
         if: ${{ steps.get-next-job.outputs.job_found == 'true' }}
         shell: bash
         run: |
-          PAYLOAD="Successfully started Library Update according to specification in job:
-          https://github.com/josecelano/library-aaa/commit/${{ steps.parse-payload.outputs.current_ref }}"
+          PAYLOAD="Successfully started job according to specification in commit:
+          https://github.com/josecelano/library-consumer/commit/${{ steps.get-next-job.outputs.job_commit }}"
           PAYLOAD="${PAYLOAD//'%'/'%25'}"
           PAYLOAD="${PAYLOAD//$'\n'/'%0A'}"
           PAYLOAD="${PAYLOAD//$'\r'/'%0D'}"
@@ -101,8 +101,8 @@ jobs:
         if: ${{ steps.start-job.outputs.job_started == 'true' }}
         shell: bash
         run: |
-          PAYLOAD="Successfully completed Library Update according to specification in job:
-          https://github.com/josecelano/library-aaa/commit/${{ steps.parse-payload.outputs.current_ref }}"
+          PAYLOAD="Successfully finished job according to specification in commit:
+          https://github.com/josecelano/library-consumer/commit/${{ steps.get-next-job.outputs.job_commit }}"
           PAYLOAD="${PAYLOAD//'%'/'%25'}"
           PAYLOAD="${PAYLOAD//$'\n'/'%0A'}"
           PAYLOAD="${PAYLOAD//$'\r'/'%0D'}"
