@@ -57,7 +57,7 @@ jobs:
           https://github.com/josecelano/library-aaa/commit/${{ steps.update-submodule.outputs.previous_ref }}
           ->
           https://github.com/josecelano/library-aaa/commit/${{ steps.update-submodule.outputs.current_ref }}
-          \n
+          
           PREVIOUS_REF=${{ steps.update-submodule.outputs.previous_ref }}
           CURRENT_REF=${{ steps.update-submodule.outputs.current_ref }}"
           PAYLOAD="${PAYLOAD//'%'/'%25'}"
