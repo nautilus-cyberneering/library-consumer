@@ -85,6 +85,7 @@ jobs:
       - name: Show new git-queue commit
         if: ${{ steps.get-next-job.outputs.job_found == 'false' && steps.update-submodule.outputs.updated == 'true' && steps.create-job.outputs.job_created == 'true' }}
         run: |
+          git log -1 --pretty="fuller" --show-signature
           git show --show-signature ${{ steps.create-job.outputs.job_commit }}
 
       - name: Push new job to the queue
