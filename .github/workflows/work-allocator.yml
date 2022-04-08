@@ -27,6 +27,12 @@ jobs:
           git_commit_gpgsign: true
           fingerprint: "BD98B3F42545FF93EFF55F7F3F39AA1432CA6AD7"
 
+      - name: Set the length for git short commit hashes
+        run: |
+          # Why do we need this? https://github.com/Nautilus-Cyberneering/library-consumer/issues/22
+          # https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreabbrev
+          git config --global core.abbrev 7
+
       - name: Get next job
         id: get-next-job
         uses: Nautilus-Cyberneering/git-queue@v1-beta
