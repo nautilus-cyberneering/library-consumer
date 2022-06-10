@@ -97,11 +97,11 @@ git ci --allow-empty -m "trigger workflow on consumer repo"
 When the workflow finishes the log output should be something like:
 
 ```console
-* 0340edd - (origin/main) 📝✅: Library Update [library-aaa]: job.ref.8c017ac2298c0039cf5a81cadbf2e6143604f206 (2022-02-23 17:02:31 +0000) <NautilusCyberneering[bot]>
+* 0340edd - (origin/main) 📝✅: library-update: job.ref.8c017ac2298c0039cf5a81cadbf2e6143604f206 (2022-02-23 17:02:31 +0000) <NautilusCyberneering[bot]>
 * 5e05fe8 - update library aaa to commit fb1df3a3aa113e0e3d2ec8f6c44e3d189660e505 (2022-02-23 17:02:28 +0000) <A committer>
-* 0e00d62 - 📝👔: Library Update [library-aaa]: job.ref.8c017ac2298c0039cf5a81cadbf2e6143604f206 (2022-02-23 17:02:27 +0000) <NautilusCyberneering[bot]>
+* 0e00d62 - 📝👔: library-update: job.ref.8c017ac2298c0039cf5a81cadbf2e6143604f206 (2022-02-23 17:02:27 +0000) <NautilusCyberneering[bot]>
 * 730e0e0 - remove all embedded git-queue test workflow (2022-02-23 17:02:04 +0000) <Jose Celano>
-* 8c017ac - 📝🈺: Library Update [library-aaa] (2022-02-23 17:01:07 +0000) <NautilusCyberneering[bot]>
+* 8c017ac - 📝🈺: library-update (2022-02-23 17:01:07 +0000) <NautilusCyberneering[bot]>
 ```
 
 The second workflow executed should fail:
