@@ -1,5 +1,7 @@
 # Library Consumer
 
+[![Work allocator](https://github.com/Nautilus-Cyberneering/library-consumer/actions/workflows/work-allocator.yml/badge.svg)](https://github.com/Nautilus-Cyberneering/library-consumer/actions/workflows/work-allocator.yml) [![Worker](https://github.com/Nautilus-Cyberneering/library-consumer/actions/workflows/worker.yml/badge.svg)](https://github.com/Nautilus-Cyberneering/library-consumer/actions/workflows/worker.yml)
+
 >NOTE: We think this idea can be very useful for a lot of projects so we decided to create a [GitHub Action](https://github.com/Nautilus-Cyberneering/git-queue).
 
 Crazy idea: let's use git empty commits as a concurrency lock to provide exclusive access to git merges.
